@@ -1,7 +1,8 @@
-import { db } from './firebase.js';
+import { db, auth } from './firebase.js';
 import { collection, addDoc, getDocs, doc, updateDoc, deleteDoc, serverTimestamp, query, where } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js';
+import { createUserWithEmailAndPassword } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js';
 import { checkAuth } from './auth.js';
-import { formatCFA } from './utils.js';
+import { formatCFA, generatePassword } from './utils.js';
 
 // Role protection
 checkAuth('admin');
@@ -47,7 +48,7 @@ async function loadDashboardStats() {
   }
 }
 
-// Créer un utilisateur
+// Créer un utilisateur avec Email/Password
 async function createUser(firstName, lastName, email, role) {
   // Validation des entrées
   const errorBox = document.getElementById('error-message');
@@ -64,37 +65,43 @@ async function createUser(firstName, lastName, email, role) {
     return;
   }
 
-  try {
-    // Vérification unicité email
-    const existingQuery = query(collection(db, 'users'), where('email', '==', email));
-    const existingSnapshot = await getDocs(existingQuery);
-    if (!existingSnapshot.empty) {
-      if (errorBox) errorBox.textContent = 'Email déjà utilisé';
-      return;
-    }
+  // Générer un mot de passe temporaire sécurisé
+  const temporaryPassword = generatePassword();
 
+  try {
+    // Créer l'utilisateur dans Firebase Auth
+    const userCredential = await createUserWithEmailAndPassword(auth, email, temporaryPassword);
+    const uid = userCredential.user.uid;
+
+    // Créer le document dans Firestore
     const currentUser = JSON.parse(sessionStorage.getItem('user'));
     const userData = {
+      uid,
       firstName,
       lastName,
       email,
       role,
       status: 'active',
+      passwordTemporary: true, // Marquer comme mot de passe temporaire
       createdAt: serverTimestamp(),
       createdBy: currentUser.uid
     };
 
-    if (role === 'agent' || role === 'supervisor') {
-      userData.authProvider = 'google';
-    }
-
     await addDoc(collection(db, 'users'), userData);
+
+    // Afficher les identifiants générés (pour que l'admin puisse les envoyer)
+    alert(`Utilisateur créé avec succès !\n\nEmail: ${email}\nMot de passe temporaire: ${temporaryPassword}\n\nL'utilisateur devra changer son mot de passe à la première connexion.`);
+
     loadUsers(); // Recharger la liste
   } catch (error) {
-    if (errorBox) {
-      errorBox.textContent = error.message;
+    if (error.code === 'auth/email-already-in-use') {
+      if (errorBox) errorBox.textContent = 'Email déjà utilisé';
     } else {
-      console.error(error);
+      if (errorBox) {
+        errorBox.textContent = error.message;
+      } else {
+        console.error(error);
+      }
     }
   }
 }

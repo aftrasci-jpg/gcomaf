@@ -1,23 +1,12 @@
-import { auth, db, provider } from './firebase.js';
-import { signInWithEmailAndPassword, signInWithPopup } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js';
+import { auth, db } from './firebase.js';
+import { signInWithEmailAndPassword } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js';
 import { collection, query, where, getDocs } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js';
 
-// Fonction de connexion admin
-async function loginAdminEmailPassword(email, password) {
+// Fonction de connexion Email/Password
+async function loginWithEmailPassword(email, password) {
   try {
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
     const user = userCredential.user;
-    await checkUserInFirestore(user.email);
-  } catch (error) {
-    throw error;
-  }
-}
-
-// Fonction de connexion Google
-async function loginWithGoogle() {
-  try {
-    const result = await signInWithPopup(auth, provider);
-    const user = result.user;
     await checkUserInFirestore(user.email);
   } catch (error) {
     throw error;
@@ -43,6 +32,14 @@ async function checkUserInFirestore(email) {
 
   if (!userData.firstName || !userData.lastName) {
     throw new Error('Identité incomplète');
+  }
+
+  // Vérifier si l'utilisateur doit changer son mot de passe
+  if (userData.passwordTemporary === true) {
+    // Rediriger vers la page de changement de mot de passe
+    const changePasswordUrl = window.location.protocol === 'file:' ? 'change-password.html' : '/change-password.html';
+    window.location.href = changePasswordUrl;
+    return; // Ne pas continuer avec la redirection normale
   }
 
   // Stocker en session
@@ -99,29 +96,36 @@ function checkAuth(requiredRole) {
 
 // Gestion des événements
 document.addEventListener('DOMContentLoaded', () => {
-  const adminForm = document.getElementById('admin-form');
-  const googleBtn = document.getElementById('google-login');
+  const loginForm = document.getElementById('login-form');
   const errorDiv = document.getElementById('error-message');
 
-  if (adminForm) {
-    adminForm.addEventListener('submit', async (e) => {
+  if (loginForm) {
+    loginForm.addEventListener('submit', async (e) => {
       e.preventDefault();
-      const email = document.getElementById('admin-email').value;
-      const password = document.getElementById('admin-password').value;
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
       try {
-        await loginAdminEmailPassword(email, password);
+        await loginWithEmailPassword(email, password);
       } catch (error) {
-        errorDiv.textContent = error.message;
-      }
-    });
-  }
-
-  if (googleBtn) {
-    googleBtn.addEventListener('click', async () => {
-      try {
-        await loginWithGoogle();
-      } catch (error) {
-        errorDiv.textContent = error.message;
+        let errorMessage = 'Erreur de connexion';
+        switch (error.code) {
+          case 'auth/user-not-found':
+            errorMessage = 'Utilisateur non trouvé';
+            break;
+          case 'auth/wrong-password':
+            errorMessage = 'Mot de passe incorrect';
+            break;
+          case 'auth/invalid-email':
+            errorMessage = 'Format d\'email invalide';
+            break;
+          case 'auth/user-disabled':
+            errorMessage = 'Compte désactivé';
+            break;
+          default:
+            errorMessage = error.message;
+        }
+        errorDiv.textContent = errorMessage;
+        errorDiv.style.display = 'block';
       }
     });
   }
