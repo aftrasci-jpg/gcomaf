@@ -1,0 +1,5 @@
+# Firebase API proxy
+/api/*  https://your-firebase-project.firebaseio.com/:splat  200
+
+# SPA fallback for client-side routing
+/*      /index.html   200
