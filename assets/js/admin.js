@@ -1,604 +1,833 @@
-import { db, auth } from './firebase.js';
-import { collection, addDoc, getDocs, doc, updateDoc, deleteDoc, serverTimestamp, query, where } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js';
-import { createUserWithEmailAndPassword } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js';
-import { checkAuth } from './auth.js';
-import { formatCFA, generatePassword } from './utils.js';
+/**
+ * Point d'entrée principal pour l'administration CRM
+ * Utilise l'architecture modulaire des services pour une meilleure maintenabilité
+ */
 
-// Role protection
+import { checkAuth } from './auth.js';
+import { formatCFA } from './utils.js';
+
+// Services
+import { authAdminService } from './services/auth-admin.js';
+import { usersService } from './services/users.service.js';
+import { clientsService } from './services/clients.service.js';
+import { salesService } from './services/sales.service.js';
+import { formsService } from './services/forms.service.js';
+import { dashboardService } from './services/dashboard.service.js';
+
+// Protection d'accès admin
 checkAuth('admin');
 
-// Charger les statistiques du dashboard
-async function loadDashboardStats() {
-  try {
-    // Clients confirmés
-    const clientsSnapshot = await getDocs(collection(db, 'clients'));
-    const clientsCount = clientsSnapshot.size;
-    const clientsEl = document.getElementById('clients-count');
-    if (clientsEl) clientsEl.textContent = clientsCount;
+// Variables globales pour la gestion d'état
+let currentLoadingState = false;
 
-    // Agents actifs
-    const agentsQuery = query(collection(db, 'users'), where('role', '==', 'agent'), where('status', '==', 'active'));
-    const agentsSnapshot = await getDocs(agentsQuery);
-    const agentsCount = agentsSnapshot.size;
-    const agentsEl = document.getElementById('agents-count');
-    if (agentsEl) agentsEl.textContent = agentsCount;
+/**
+ * Utilitaires UI
+ */
+class UIUtils {
+  static showLoading(message = 'Chargement...') {
+    const loader = document.createElement('div');
+    loader.id = 'global-loader';
+    loader.innerHTML = `
+      <div class="loading-overlay">
+        <div class="spinner-border text-primary" role="status">
+          <span class="visually-hidden">${message}</span>
+        </div>
+        <div class="mt-2">${message}</div>
+      </div>
+    `;
+    loader.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(255, 255, 255, 0.8);
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+    `;
+    document.body.appendChild(loader);
+    currentLoadingState = true;
+  }
 
-    // Total ventes et commissions
-    const salesSnapshot = await getDocs(collection(db, 'sales'));
-    const totals = salesSnapshot.docs.reduce((acc, doc) => {
-      const sale = doc.data();
-      acc.sales += parseFloat(sale.chiffreAffaires) || 0;
-      acc.commissions += parseFloat(sale.commission) || 0;
-      return acc;
-    }, { sales: 0, commissions: 0 });
+  static hideLoading() {
+    const loader = document.getElementById('global-loader');
+    if (loader) {
+      loader.remove();
+    }
+    currentLoadingState = false;
+  }
 
-    const salesEl = document.getElementById('sales-total');
-    if (salesEl) salesEl.textContent = formatCFA(totals.sales);
-
-    const commissionsEl = document.getElementById('commissions-total');
-    if (commissionsEl) commissionsEl.textContent = formatCFA(totals.commissions);
-
-  } catch (error) {
+  static showError(message, duration = 5000) {
     const errorBox = document.getElementById('error-message');
     if (errorBox) {
-      errorBox.textContent = error.message;
-    } else {
-      console.error(error);
+      errorBox.textContent = message;
+      errorBox.style.display = 'block';
+
+      // Auto-hide after duration
+      setTimeout(() => {
+        errorBox.style.display = 'none';
+      }, duration);
     }
+
+    // Also log to console for debugging
+    console.error('UI Error:', message);
+  }
+
+  static showSuccess(message, duration = 3000) {
+    // Créer ou utiliser une boîte de succès
+    let successBox = document.getElementById('success-message');
+    if (!successBox) {
+      successBox = document.createElement('div');
+      successBox.id = 'success-message';
+      successBox.className = 'alert alert-success';
+      successBox.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 10000;
+        max-width: 400px;
+      `;
+      document.body.appendChild(successBox);
+    }
+
+    successBox.textContent = message;
+    successBox.style.display = 'block';
+
+    setTimeout(() => {
+      successBox.style.display = 'none';
+    }, duration);
+  }
+
+  static confirmAction(message) {
+    return confirm(message);
   }
 }
 
-// Créer un utilisateur avec Email/Password
-async function createUser(firstName, lastName, email, role) {
-  // Validation des entrées
-  const errorBox = document.getElementById('error-message');
-  if (!firstName.trim() || !lastName.trim() || !email.trim()) {
-    if (errorBox) errorBox.textContent = 'Tous les champs sont obligatoires';
-    return;
-  }
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    if (errorBox) errorBox.textContent = 'Format email invalide';
-    return;
-  }
-  if (!['admin', 'agent', 'supervisor'].includes(role)) {
-    if (errorBox) errorBox.textContent = 'Rôle invalide';
-    return;
+/**
+ * Gestionnaire des utilisateurs
+ */
+class UserManager {
+  constructor() {
+    this.usersTable = null;
   }
 
-  // Générer un mot de passe temporaire sécurisé
-  const temporaryPassword = generatePassword();
+  async init() {
+    this.usersTable = document.getElementById('users-tbody');
+    if (this.usersTable) {
+      await this.loadUsers();
+      this.bindEvents();
+    }
+  }
 
-  try {
-    // Créer l'utilisateur dans Firebase Auth
-    const userCredential = await createUserWithEmailAndPassword(auth, email, temporaryPassword);
-    const uid = userCredential.user.uid;
+  async loadUsers() {
+    try {
+      UIUtils.showLoading('Chargement des utilisateurs...');
+      const users = await usersService.getAllUsers();
 
-    // Créer le document dans Firestore
-    const currentUser = JSON.parse(sessionStorage.getItem('user'));
+      if (!this.usersTable) return;
+
+      this.usersTable.innerHTML = '';
+
+      users.forEach(user => {
+        const row = this.createUserRow(user);
+        this.usersTable.appendChild(row);
+      });
+
+      UIUtils.hideLoading();
+
+    } catch (error) {
+      UIUtils.hideLoading();
+      UIUtils.showError('Erreur lors du chargement des utilisateurs: ' + error.message);
+    }
+  }
+
+  createUserRow(user) {
+    const row = document.createElement('tr');
+
+    row.innerHTML = `
+      <td>${user.firstName}</td>
+      <td>${user.lastName}</td>
+      <td>${user.email}</td>
+      <td><span class="badge bg-${this.getRoleColor(user.role)}">${this.formatRole(user.role)}</span></td>
+      <td><span class="badge bg-${user.status === 'active' ? 'success' : 'secondary'}">${this.formatStatus(user.status)}</span></td>
+      <td>
+        <div class="btn-group btn-group-sm">
+          <button class="btn btn-outline-primary btn-toggle" data-id="${user.id}" data-status="${user.status}" title="${user.status === 'active' ? 'Désactiver' : 'Activer'}">
+            <i class="fas fa-${user.status === 'active' ? 'ban' : 'check'}"></i>
+          </button>
+          <button class="btn btn-outline-info btn-send-credentials" data-id="${user.id}" data-email="${user.email}" data-firstname="${user.firstName}" title="Envoyer les identifiants">
+            <i class="fas fa-envelope"></i>
+          </button>
+        </div>
+      </td>
+    `;
+
+    return row;
+  }
+
+  getRoleColor(role) {
+    const colors = {
+      admin: 'danger',
+      supervisor: 'warning',
+      agent: 'info'
+    };
+    return colors[role] || 'secondary';
+  }
+
+  formatRole(role) {
+    const labels = {
+      admin: 'Administrateur',
+      supervisor: 'Superviseur',
+      agent: 'Agent'
+    };
+    return labels[role] || role;
+  }
+
+  formatStatus(status) {
+    return status === 'active' ? 'Actif' : 'Inactif';
+  }
+
+  bindEvents() {
+    // Toggle status buttons
+    document.addEventListener('click', async (e) => {
+      if (e.target.closest('.btn-toggle')) {
+        const button = e.target.closest('.btn-toggle');
+        const userId = button.dataset.id;
+        const currentStatus = button.dataset.status;
+
+        await this.toggleUserStatus(userId, currentStatus);
+      }
+
+      // Send credentials buttons
+      if (e.target.closest('.btn-send-credentials')) {
+        const button = e.target.closest('.btn-send-credentials');
+        const userId = button.dataset.id;
+        const email = button.dataset.email;
+        const firstName = button.dataset.firstname;
+
+        await this.sendCredentials(userId, email, firstName);
+      }
+    });
+  }
+
+  async toggleUserStatus(userId, currentStatus) {
+    const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
+    const action = newStatus === 'active' ? 'activer' : 'désactiver';
+
+    if (!UIUtils.confirmAction(`Êtes-vous sûr de vouloir ${action} cet utilisateur ?`)) {
+      return;
+    }
+
+    try {
+      UIUtils.showLoading(`Modification du statut...`);
+      await usersService.updateUserStatus(userId, newStatus);
+      UIUtils.hideLoading();
+
+      UIUtils.showSuccess(`Utilisateur ${action === 'activer' ? 'activé' : 'désactivé'} avec succès`);
+
+      // Recharger la liste
+      await this.loadUsers();
+
+    } catch (error) {
+      UIUtils.hideLoading();
+      UIUtils.showError('Erreur lors de la modification du statut: ' + error.message);
+    }
+  }
+
+  async sendCredentials(userId, email, firstName) {
+    // TODO: Implémenter l'envoi d'email
+    UIUtils.showError('Fonctionnalité d\'envoi d\'email à implémenter');
+  }
+}
+
+/**
+ * Gestionnaire de création d'utilisateurs
+ */
+class UserCreationManager {
+  constructor() {
+    this.form = null;
+  }
+
+  async init() {
+    this.form = document.getElementById('create-user-form');
+    if (this.form) {
+      this.form.addEventListener('submit', (e) => this.handleSubmit(e));
+    }
+  }
+
+  async handleSubmit(e) {
+    e.preventDefault();
+
+    const formData = new FormData(this.form);
     const userData = {
-      uid,
-      firstName,
-      lastName,
-      email,
-      role,
-      status: 'active',
-      passwordTemporary: true, // Marquer comme mot de passe temporaire
-      createdAt: serverTimestamp(),
-      createdBy: currentUser.uid
+      firstName: formData.get('firstName'),
+      lastName: formData.get('lastName'),
+      email: formData.get('email'),
+      role: formData.get('role')
     };
 
-    await addDoc(collection(db, 'users'), userData);
-
-    // Afficher les identifiants générés (pour que l'admin puisse les envoyer)
-    alert(`Utilisateur créé avec succès !\n\nEmail: ${email}\nMot de passe temporaire: ${temporaryPassword}\n\nL'utilisateur devra changer son mot de passe à la première connexion.`);
-
-    loadUsers(); // Recharger la liste
-  } catch (error) {
-    if (error.code === 'auth/email-already-in-use') {
-      if (errorBox) errorBox.textContent = 'Email déjà utilisé';
-    } else {
-      if (errorBox) {
-        errorBox.textContent = error.message;
-      } else {
-        console.error(error);
-      }
-    }
-  }
-}
-
-// Charger les utilisateurs
-async function loadUsers() {
-  try {
-    const querySnapshot = await getDocs(collection(db, 'users'));
-    const tbody = document.getElementById('users-tbody');
-    if (!tbody) return;
-    tbody.innerHTML = '';
-
-    querySnapshot.forEach((docSnap) => {
-      const user = docSnap.data();
-      const row = document.createElement('tr');
-
-      row.innerHTML = `
-        <td>${user.firstName}</td>
-        <td>${user.lastName}</td>
-        <td>${user.email}</td>
-        <td>${user.role}</td>
-        <td>${user.status}</td>
-        <td>
-          <button class="btn-toggle" data-id="${docSnap.id}" data-status="${user.status}">
-            ${user.status === 'active' ? 'Désactiver' : 'Activer'}
-          </button>
-        </td>
-      `;
-
-      tbody.appendChild(row);
-    });
-
-    // Ajouter les event listeners pour les boutons
-    document.querySelectorAll('.btn-toggle').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const id = e.target.dataset.id;
-        const status = e.target.dataset.status;
-        toggleStatus(id, status);
-      });
-    });
-
-  } catch (error) {
-    const errorBox = document.getElementById('error-message');
-    if (errorBox) {
-      errorBox.textContent = error.message;
-    } else {
-      console.error(error);
-    }
-  }
-}
-
-
-
-// Charger tous les clients pour supervision admin
-async function loadAllClients() {
-  try {
-    // Charger les utilisateurs pour les noms
-    const usersSnapshot = await getDocs(collection(db, 'users'));
-    const usersMap = {};
-    usersSnapshot.forEach(doc => {
-      const user = doc.data();
-      usersMap[doc.id] = `${user.firstName} ${user.lastName}`;
-    });
-
-    const querySnapshot = await getDocs(collection(db, 'clients'));
-    const tbody = document.getElementById('clients-tbody');
-    if (!tbody) return;
-    tbody.innerHTML = '';
-
-    querySnapshot.forEach((docSnap) => {
-      const client = docSnap.data();
-      const agentName = usersMap[client.agentId] || 'Inconnu';
-      const confirmedAt = client.confirmedAt ? new Date(client.confirmedAt.seconds * 1000).toLocaleDateString() : 'N/A';
-
-      const row = document.createElement('tr');
-
-      row.innerHTML = `
-        <td>${client.data?.name || 'N/A'}</td>
-        <td>${client.data?.email || 'N/A'}</td>
-        <td>${confirmedAt}</td>
-        <td>${agentName}</td>
-      `;
-
-      tbody.appendChild(row);
-    });
-
-  } catch (error) {
-    const errorBox = document.getElementById('error-message');
-    if (errorBox) {
-      errorBox.textContent = error.message;
-    } else {
-      console.error(error);
-    }
-  }
-}
-
-// Basculer le statut
-async function toggleStatus(userId, currentStatus) {
-  try {
-    const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
-    await updateDoc(doc(db, 'users', userId), {
-      status: newStatus
-    });
-    loadUsers();
-  } catch (error) {
-    const errorBox = document.getElementById('error-message');
-    if (errorBox) {
-      errorBox.textContent = error.message;
-    } else {
-      console.error(error);
-    }
-  }
-}
-
-
-
-// Fonctions pour les formulaires de prospection
-async function createProspectionForm(title, description, fields) {
-  // Validation des entrées
-  const errorBox = document.getElementById('error-message');
-  if (!title.trim() || !description.trim()) {
-    if (errorBox) errorBox.textContent = 'Titre et description obligatoires';
-    return;
-  }
-  if (fields.length === 0) {
-    if (errorBox) errorBox.textContent = 'Au moins un champ requis';
-    return;
-  }
-
-  try {
-    const currentUser = JSON.parse(sessionStorage.getItem('user'));
-    await addDoc(collection(db, 'prospection_forms'), {
-      title,
-      description,
-      fields,
-      createdAt: serverTimestamp(),
-      createdBy: currentUser.uid
-    });
-    loadProspectionForms();
-  } catch (error) {
-    if (errorBox) {
-      errorBox.textContent = error.message;
-    } else {
-      console.error(error);
-    }
-  }
-}
-
-// Ajouter un champ au formulaire
-function addField() {
-  const container = document.getElementById('fields-container');
-  const fieldDiv = document.createElement('div');
-  fieldDiv.className = 'field-item';
-
-  fieldDiv.innerHTML = `
-    <div class="form-group">
-      <label>Nom du champ</label>
-      <input type="text" class="field-name" required>
-    </div>
-    <div class="form-group">
-      <label>Label</label>
-      <input type="text" class="field-label" required>
-    </div>
-    <div class="form-group">
-      <label>Type</label>
-      <select class="field-type">
-        <option value="text">Texte</option>
-        <option value="email">Email</option>
-        <option value="tel">Téléphone</option>
-        <option value="textarea">Zone de texte</option>
-      </select>
-    </div>
-    <div class="form-group">
-      <label>
-        <input type="checkbox" class="field-required"> Obligatoire
-      </label>
-    </div>
-    <button type="button" class="btn btn-danger remove-field-btn">Supprimer</button>
-  `;
-
-  container.appendChild(fieldDiv);
-
-  // Event listener pour supprimer le champ
-  fieldDiv.querySelector('.remove-field-btn').addEventListener('click', () => {
-    container.removeChild(fieldDiv);
-  });
-}
-
-// Collecter les champs du formulaire
-function collectFields() {
-  const fields = [];
-  const fieldItems = document.querySelectorAll('.field-item');
-
-  fieldItems.forEach(item => {
-    const name = item.querySelector('.field-name').value;
-    const label = item.querySelector('.field-label').value;
-    const type = item.querySelector('.field-type').value;
-    const required = item.querySelector('.field-required').checked;
-
-    if (name && label) {
-      fields.push({ name, label, type, required });
-    }
-  });
-
-  return fields;
-}
-
-async function loadProspectionForms() {
-  try {
-    const querySnapshot = await getDocs(collection(db, 'prospection_forms'));
-    const tbody = document.getElementById('forms-tbody');
-    if (!tbody) return;
-    tbody.innerHTML = '';
-
-    querySnapshot.forEach((docSnap) => {
-      const form = docSnap.data();
-      const row = document.createElement('tr');
-
-      row.innerHTML = `
-        <td>${form.title}</td>
-        <td>${form.description}</td>
-        <td>
-          <button class="btn-delete-form" data-id="${docSnap.id}">Supprimer</button>
-        </td>
-      `;
-
-      tbody.appendChild(row);
-    });
-
-    document.querySelectorAll('.btn-delete-form').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const id = e.target.dataset.id;
-        deleteProspectionForm(id);
-      });
-    });
-
-  } catch (error) {
-    const errorDiv = document.getElementById('error-message');
-    if (errorDiv) errorDiv.textContent = error.message;
-  }
-}
-
-async function deleteProspectionForm(formId) {
-  if (confirm('Êtes-vous sûr de vouloir supprimer ce formulaire ?')) {
     try {
-      await deleteDoc(doc(db, 'prospection_forms', formId));
-      loadProspectionForms();
+      UIUtils.showLoading('Création de l\'utilisateur...');
+
+      const result = await usersService.createUser(
+        userData.firstName,
+        userData.lastName,
+        userData.email,
+        userData.role
+      );
+
+      UIUtils.hideLoading();
+
+      // Afficher les identifiants générés
+      const credentialsMessage = `
+        Utilisateur créé avec succès !
+
+        📧 Email : ${result.email}
+        🔑 Mot de passe temporaire : ${result.temporaryPassword}
+
+        ⚠️ L'utilisateur devra changer son mot de passe à la première connexion.
+      `;
+
+      alert(credentialsMessage);
+      UIUtils.showSuccess('Utilisateur créé avec succès');
+
+      // Réinitialiser le formulaire
+      this.form.reset();
+
+      // Recharger la liste des utilisateurs
+      if (window.userManager) {
+        await window.userManager.loadUsers();
+      }
+
     } catch (error) {
-      const errorDiv = document.getElementById('error-message');
-      if (errorDiv) errorDiv.textContent = error.message;
+      UIUtils.hideLoading();
+      UIUtils.showError('Erreur lors de la création: ' + error.message);
     }
   }
 }
 
-// Gestion des événements
-document.addEventListener('DOMContentLoaded', () => {
-  const createUserForm = document.getElementById('create-user-form');
-  if (createUserForm) {
-    createUserForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const firstName = document.getElementById('firstName').value;
-      const lastName = document.getElementById('lastName').value;
-      const email = document.getElementById('email').value;
-      const role = document.getElementById('role').value;
-
-      try {
-        await createUser(firstName, lastName, email, role);
-        createUserForm.reset();
-      } catch (error) {
-        const errorBox = document.getElementById('error-message');
-        if (errorBox) {
-          errorBox.textContent = error.message;
-        } else {
-          console.error(error);
-        }
-      }
-    });
+/**
+ * Gestionnaire du dashboard
+ */
+class DashboardManager {
+  constructor() {
+    this.statsLoaded = false;
   }
 
-  const createFormForm = document.getElementById('create-form-form');
-  if (createFormForm) {
-    createFormForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const title = document.getElementById('form-title').value;
-      const description = document.getElementById('form-description').value;
-      const fields = collectFields();
-
-      try {
-        await createProspectionForm(title, description, fields);
-        createFormForm.reset();
-        document.getElementById('fields-container').innerHTML = '';
-      } catch (error) {
-        const errorBox = document.getElementById('error-message');
-        if (errorBox) {
-          errorBox.textContent = error.message;
-        } else {
-          console.error(error);
-        }
-      }
-    });
+  async init() {
+    await this.loadStats();
   }
 
-  const addFieldBtn = document.getElementById('add-field-btn');
-  if (addFieldBtn) {
-    addFieldBtn.addEventListener('click', addField);
+  async loadStats() {
+    try {
+      const stats = await dashboardService.getMainStats();
+
+      // Mettre à jour les compteurs
+      this.updateCounter('clients-count', stats.clientsCount);
+      this.updateCounter('agents-count', stats.agentsCount);
+      this.updateCounter('sales-total', formatCFA(stats.salesTotal));
+      this.updateCounter('commissions-total', formatCFA(stats.commissionsTotal));
+
+      this.statsLoaded = true;
+
+    } catch (error) {
+      console.error('Erreur lors du chargement des statistiques:', error);
+      UIUtils.showError('Erreur lors du chargement des statistiques');
+    }
   }
 
-  const createSaleForm = document.getElementById('create-sale-form');
-  if (createSaleForm) {
-    // Charger les agents
-    loadAgentsForSelect();
+  updateCounter(elementId, value) {
+    const element = document.getElementById(elementId);
+    if (element) {
+      element.textContent = value;
+    }
+  }
+}
 
-    // Calculer automatiquement
+/**
+ * Gestionnaire des clients
+ */
+class ClientsManager {
+  constructor() {
+    this.clientsTable = null;
+  }
+
+  async init() {
+    this.clientsTable = document.getElementById('clients-tbody');
+    if (this.clientsTable) {
+      await this.loadClients();
+    }
+  }
+
+  async loadClients() {
+    try {
+      UIUtils.showLoading('Chargement des clients...');
+      const clients = await clientsService.getAllClients();
+
+      if (!this.clientsTable) return;
+
+      this.clientsTable.innerHTML = '';
+
+      clients.forEach(client => {
+        const row = this.createClientRow(client);
+        this.clientsTable.appendChild(row);
+      });
+
+      UIUtils.hideLoading();
+
+    } catch (error) {
+      UIUtils.hideLoading();
+      UIUtils.showError('Erreur lors du chargement des clients: ' + error.message);
+    }
+  }
+
+  createClientRow(client) {
+    const row = document.createElement('tr');
+
+    row.innerHTML = `
+      <td>${client.data?.name || 'N/A'}</td>
+      <td>${client.data?.email || 'N/A'}</td>
+      <td>${client.confirmedAt.toLocaleDateString('fr-FR')}</td>
+      <td>${client.agentName}</td>
+    `;
+
+    return row;
+  }
+}
+
+/**
+ * Gestionnaire des ventes
+ */
+class SalesManager {
+  constructor() {
+    this.salesTable = null;
+    this.agentSelect = null;
+  }
+
+  async init() {
+    this.salesTable = document.getElementById('sales-tbody');
+    this.agentSelect = document.getElementById('agent-select');
+
+    if (this.salesTable) {
+      await this.loadSales();
+    }
+
+    if (this.agentSelect) {
+      await this.loadAgentsForSelect();
+    }
+
+    this.bindEvents();
+  }
+
+  async loadSales() {
+    try {
+      UIUtils.showLoading('Chargement des ventes...');
+      const sales = await salesService.getAllSales();
+
+      if (!this.salesTable) return;
+
+      this.salesTable.innerHTML = '';
+
+      sales.forEach(sale => {
+        const row = this.createSaleRow(sale);
+        this.salesTable.appendChild(row);
+      });
+
+      UIUtils.hideLoading();
+
+    } catch (error) {
+      UIUtils.hideLoading();
+      UIUtils.showError('Erreur lors du chargement des ventes: ' + error.message);
+    }
+  }
+
+  createSaleRow(sale) {
+    const row = document.createElement('tr');
+
+    row.innerHTML = `
+      <td>${sale.agentName}</td>
+      <td>${formatCFA(sale.chiffreAffaires)}</td>
+      <td>${formatCFA(sale.montantReel)}</td>
+      <td>${formatCFA(sale.benefice)}</td>
+      <td>${sale.tauxCommission}%</td>
+      <td>${formatCFA(sale.commission)}</td>
+    `;
+
+    return row;
+  }
+
+  async loadAgentsForSelect() {
+    try {
+      const users = await usersService.getAllUsers();
+      const agents = users.filter(u => u.role === 'agent' || u.role === 'supervisor');
+
+      if (!this.agentSelect) return;
+
+      this.agentSelect.innerHTML = '<option value="">Sélectionner un agent</option>';
+
+      agents.forEach(agent => {
+        const option = document.createElement('option');
+        option.value = agent.id;
+        option.textContent = `${agent.firstName} ${agent.lastName}`;
+        this.agentSelect.appendChild(option);
+      });
+
+    } catch (error) {
+      console.error('Erreur lors du chargement des agents:', error);
+    }
+  }
+
+  bindEvents() {
+    // Calcul automatique des commissions
     const inputs = ['chiffre-affaires', 'montant-reel', 'taux-commission'];
     inputs.forEach(id => {
       const input = document.getElementById(id);
       if (input) {
-        input.addEventListener('input', calculateCommission);
+        input.addEventListener('input', () => this.calculateCommission());
       }
     });
 
-    createSaleForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const agentId = document.getElementById('agent-select').value;
-      const ca = parseFloat(document.getElementById('chiffre-affaires').value);
-      const mr = parseFloat(document.getElementById('montant-reel').value);
-      const tc = parseFloat(document.getElementById('taux-commission').value);
-
-      // Validation des entrées
-      const errorBox = document.getElementById('error-message');
-      if (!agentId) {
-        if (errorBox) errorBox.textContent = 'Sélectionnez un agent';
-        return;
-      }
-      if (isNaN(ca) || isNaN(mr) || isNaN(tc) || ca < 0 || mr < 0 || tc < 0 || tc > 100) {
-        if (errorBox) errorBox.textContent = 'Valeurs numériques invalides';
-        return;
-      }
-
-      const benefice = ca - mr;
-      const commission = benefice * (tc / 100);
-
-      try {
-        await createSale(agentId, ca, mr, tc, benefice, commission);
-        createSaleForm.reset();
-        document.getElementById('benefice').textContent = '0';
-        document.getElementById('commission').textContent = '0';
-      } catch (error) {
-        const errorBox = document.getElementById('error-message');
-        if (errorBox) {
-          errorBox.textContent = error.message;
-        } else {
-          console.error(error);
-        }
-      }
-    });
+    // Formulaire de création de vente
+    const saleForm = document.getElementById('create-sale-form');
+    if (saleForm) {
+      saleForm.addEventListener('submit', (e) => this.handleSaleSubmit(e));
+    }
   }
 
-  // Charger les données au chargement
-  loadDashboardStats();
-  if (document.getElementById('users-tbody')) {
-    loadUsers();
-  }
-  if (document.getElementById('clients-tbody')) {
-    loadAllClients();
-  }
-  if (document.getElementById('forms-tbody')) {
-    loadProspectionForms();
-  }
-  if (document.getElementById('sales-tbody')) {
-    loadSales();
+  calculateCommission() {
+    const ca = parseFloat(document.getElementById('chiffre-affaires')?.value) || 0;
+    const mr = parseFloat(document.getElementById('montant-reel')?.value) || 0;
+    const tc = parseFloat(document.getElementById('taux-commission')?.value) || 0;
+
+    const { benefice, commission } = salesService.calculateCommission(ca, mr, tc);
+
+    const beneficeEl = document.getElementById('benefice');
+    const commissionEl = document.getElementById('commission');
+
+    if (beneficeEl) beneficeEl.textContent = formatCFA(benefice);
+    if (commissionEl) commissionEl.textContent = formatCFA(commission);
   }
 
-  // Fix UX bug: Auto-close sidenav on mobile after clicking nav links
-  const sidenav = document.getElementById("sidenav-main");
-  const toggler = document.getElementById("iconNavbarSidenav");
+  async handleSaleSubmit(e) {
+    e.preventDefault();
 
-  if (sidenav) {
-    const navLinks = sidenav.querySelectorAll(".nav-link");
+    const formData = {
+      agentId: document.getElementById('agent-select')?.value,
+      chiffreAffaires: parseFloat(document.getElementById('chiffre-affaires')?.value),
+      montantReel: parseFloat(document.getElementById('montant-reel')?.value),
+      tauxCommission: parseFloat(document.getElementById('taux-commission')?.value)
+    };
 
-    navLinks.forEach(link => {
-      link.addEventListener("click", () => {
-        // Remove pinned class if present
-        if (document.body.classList.contains("g-sidenav-pinned")) {
-          document.body.classList.remove("g-sidenav-pinned");
-        }
+    // Validation
+    if (!formData.agentId) {
+      UIUtils.showError('Veuillez sélectionner un agent');
+      return;
+    }
 
-        // Trigger the toggler button to close the menu
-        if (toggler && window.innerWidth < 1200) {
-          toggler.click();
-        }
+    if (isNaN(formData.chiffreAffaires) || formData.chiffreAffaires < 0) {
+      UIUtils.showError('Chiffre d\'affaires invalide');
+      return;
+    }
+
+    try {
+      UIUtils.showLoading('Création de la vente...');
+
+      await salesService.createSale(
+        formData.agentId,
+        formData.chiffreAffaires,
+        formData.montantReel,
+        formData.tauxCommission
+      );
+
+      UIUtils.hideLoading();
+      UIUtils.showSuccess('Vente créée avec succès');
+
+      // Réinitialiser le formulaire
+      e.target.reset();
+      document.getElementById('benefice').textContent = '0';
+      document.getElementById('commission').textContent = '0';
+
+      // Recharger la liste
+      await this.loadSales();
+
+    } catch (error) {
+      UIUtils.hideLoading();
+      UIUtils.showError('Erreur lors de la création de la vente: ' + error.message);
+    }
+  }
+}
+
+/**
+ * Gestionnaire des formulaires
+ */
+class FormsManager {
+  constructor() {
+    this.formsTable = null;
+  }
+
+  async init() {
+    this.formsTable = document.getElementById('forms-tbody');
+
+    if (this.formsTable) {
+      await this.loadForms();
+      this.bindEvents();
+    }
+
+    // Formulaire de création
+    const formForm = document.getElementById('create-form-form');
+    if (formForm) {
+      formForm.addEventListener('submit', (e) => this.handleFormSubmit(e));
+    }
+
+    // Bouton d'ajout de champ
+    const addFieldBtn = document.getElementById('add-field-btn');
+    if (addFieldBtn) {
+      addFieldBtn.addEventListener('click', () => this.addField());
+    }
+  }
+
+  async loadForms() {
+    try {
+      UIUtils.showLoading('Chargement des formulaires...');
+      const forms = await formsService.getAllForms();
+
+      if (!this.formsTable) return;
+
+      this.formsTable.innerHTML = '';
+
+      forms.forEach(form => {
+        const row = this.createFormRow(form);
+        this.formsTable.appendChild(row);
       });
-    });
-  }
-});
-// Fonctions pour les ventes
-async function loadAgentsForSelect() {
-  try {
-    const querySnapshot = await getDocs(collection(db, 'users'));
-    const select = document.getElementById('agent-select');
-    if (!select) return;
 
-    querySnapshot.forEach((docSnap) => {
-      const user = docSnap.data();
-      if (user.role === 'agent') {
-        const option = document.createElement('option');
-        option.value = docSnap.id;
-        option.textContent = `${user.firstName} ${user.lastName}`;
-        select.appendChild(option);
+      UIUtils.hideLoading();
+
+    } catch (error) {
+      UIUtils.hideLoading();
+      UIUtils.showError('Erreur lors du chargement des formulaires: ' + error.message);
+    }
+  }
+
+  createFormRow(form) {
+    const row = document.createElement('tr');
+
+    row.innerHTML = `
+      <td>${form.title}</td>
+      <td>${form.description}</td>
+      <td>
+        <button class="btn btn-danger btn-sm btn-delete-form" data-id="${form.id}">
+          <i class="fas fa-trash"></i> Supprimer
+        </button>
+      </td>
+    `;
+
+    return row;
+  }
+
+  bindEvents() {
+    document.addEventListener('click', async (e) => {
+      if (e.target.closest('.btn-delete-form')) {
+        const button = e.target.closest('.btn-delete-form');
+        const formId = button.dataset.id;
+
+        await this.deleteForm(formId);
+      }
+
+      if (e.target.closest('.remove-field-btn')) {
+        const button = e.target.closest('.remove-field-btn');
+        const fieldDiv = button.closest('.field-item');
+        if (fieldDiv) {
+          fieldDiv.remove();
+        }
       }
     });
-  } catch (error) {
-    const errorBox = document.getElementById('error-message');
-    if (errorBox) {
-      errorBox.textContent = error.message;
-    } else {
-      console.error(error);
+  }
+
+  addField() {
+    const container = document.getElementById('fields-container');
+    if (!container) return;
+
+    const fieldDiv = document.createElement('div');
+    fieldDiv.className = 'field-item border rounded p-3 mb-3';
+
+    fieldDiv.innerHTML = `
+      <div class="row">
+        <div class="col-md-3">
+          <label class="form-label">Nom du champ</label>
+          <input type="text" class="form-control field-name" required>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Label</label>
+          <input type="text" class="form-control field-label" required>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label">Type</label>
+          <select class="form-control field-type">
+            <option value="text">Texte</option>
+            <option value="email">Email</option>
+            <option value="tel">Téléphone</option>
+            <option value="textarea">Zone de texte</option>
+          </select>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label">Obligatoire</label>
+          <div class="form-check mt-2">
+            <input type="checkbox" class="form-check-input field-required">
+          </div>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label">&nbsp;</label>
+          <button type="button" class="btn btn-danger btn-sm remove-field-btn w-100">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+      </div>
+    `;
+
+    container.appendChild(fieldDiv);
+  }
+
+  collectFields() {
+    const fields = [];
+    const fieldItems = document.querySelectorAll('.field-item');
+
+    fieldItems.forEach(item => {
+      const name = item.querySelector('.field-name')?.value;
+      const label = item.querySelector('.field-label')?.value;
+      const type = item.querySelector('.field-type')?.value;
+      const required = item.querySelector('.field-required')?.checked;
+
+      if (name && label) {
+        fields.push({ name, label, type, required });
+      }
+    });
+
+    return fields;
+  }
+
+  async handleFormSubmit(e) {
+    e.preventDefault();
+
+    const title = document.getElementById('form-title')?.value;
+    const description = document.getElementById('form-description')?.value;
+    const fields = this.collectFields();
+
+    try {
+      UIUtils.showLoading('Création du formulaire...');
+
+      await formsService.createForm(title, description, fields);
+
+      UIUtils.hideLoading();
+      UIUtils.showSuccess('Formulaire créé avec succès');
+
+      // Réinitialiser le formulaire
+      e.target.reset();
+      document.getElementById('fields-container').innerHTML = '';
+
+      // Recharger la liste
+      await this.loadForms();
+
+    } catch (error) {
+      UIUtils.hideLoading();
+      UIUtils.showError('Erreur lors de la création du formulaire: ' + error.message);
+    }
+  }
+
+  async deleteForm(formId) {
+    if (!UIUtils.confirmAction('Êtes-vous sûr de vouloir supprimer ce formulaire ?')) {
+      return;
+    }
+
+    try {
+      UIUtils.showLoading('Suppression du formulaire...');
+      await formsService.deleteForm(formId);
+      UIUtils.hideLoading();
+      UIUtils.showSuccess('Formulaire supprimé avec succès');
+
+      await this.loadForms();
+
+    } catch (error) {
+      UIUtils.hideLoading();
+      UIUtils.showError('Erreur lors de la suppression: ' + error.message);
     }
   }
 }
 
-function calculateCommission() {
-  const beneficeEl = document.getElementById('benefice');
-  const commissionEl = document.getElementById('commission');
-  const ca = parseFloat(document.getElementById('chiffre-affaires').value) || 0;
-  const mr = parseFloat(document.getElementById('montant-reel').value) || 0;
-  const tc = parseFloat(document.getElementById('taux-commission').value) || 0;
+/**
+ * Gestionnaire principal de l'interface admin
+ */
+class AdminInterface {
+  constructor() {
+    this.managers = {};
+    this.init();
+  }
 
-  const benefice = ca - mr;
-  const commission = benefice * (tc / 100);
+  async init() {
+    try {
+      // Initialiser tous les gestionnaires
+      this.managers.dashboard = new DashboardManager();
+      this.managers.users = new UserManager();
+      this.managers.userCreation = new UserCreationManager();
+      this.managers.clients = new ClientsManager();
+      this.managers.sales = new SalesManager();
+      this.managers.forms = new FormsManager();
 
-  if (beneficeEl) beneficeEl.textContent = formatCFA(benefice);
-  if (commissionEl) commissionEl.textContent = formatCFA(commission);
-}
+      // Initialiser chaque gestionnaire
+      await Promise.all([
+        this.managers.dashboard.init(),
+        this.managers.users.init(),
+        this.managers.userCreation.init(),
+        this.managers.clients.init(),
+        this.managers.sales.init(),
+        this.managers.forms.init()
+      ]);
 
-async function createSale(agentId, chiffreAffaires, montantReel, tauxCommission, benefice, commission) {
-  try {
-    const currentUser = JSON.parse(sessionStorage.getItem('user'));
-    await addDoc(collection(db, 'sales'), {
-      agentId,
-      chiffreAffaires,
-      montantReel,
-      tauxCommission,
-      benefice,
-      commission,
-      createdAt: serverTimestamp(),
-      createdBy: currentUser.uid
-    });
-    loadSales();
-  } catch (error) {
-    const errorBox = document.getElementById('error-message');
-    if (errorBox) {
-      errorBox.textContent = error.message;
-    } else {
-      console.error(error);
+      // Fix UX bug: Auto-close sidenav on mobile
+      this.initSidenavFix();
+
+      console.log('Interface admin initialisée avec succès');
+
+    } catch (error) {
+      console.error('Erreur lors de l\'initialisation:', error);
+      UIUtils.showError('Erreur lors de l\'initialisation de l\'interface');
+    }
+  }
+
+  initSidenavFix() {
+    const sidenav = document.getElementById("sidenav-main");
+    const toggler = document.getElementById("iconNavbarSidenav");
+
+    if (sidenav) {
+      const navLinks = sidenav.querySelectorAll(".nav-link");
+
+      navLinks.forEach(link => {
+        link.addEventListener("click", () => {
+          // Remove pinned class if present
+          if (document.body.classList.contains("g-sidenav-pinned")) {
+            document.body.classList.remove("g-sidenav-pinned");
+          }
+
+          // Trigger the toggler button to close the menu on mobile
+          if (toggler && window.innerWidth < 1200) {
+            toggler.click();
+          }
+        });
+      });
     }
   }
 }
 
-async function loadSales() {
-  try {
-    // Charger les utilisateurs pour les noms
-    const usersSnapshot = await getDocs(collection(db, 'users'));
-    const usersMap = {};
-    usersSnapshot.forEach(doc => {
-      const user = doc.data();
-      usersMap[doc.id] = `${user.firstName} ${user.lastName}`;
-    });
+// Démarrage de l'application
+document.addEventListener('DOMContentLoaded', () => {
+  // Initialiser l'interface admin
+  window.adminInterface = new AdminInterface();
 
-    const querySnapshot = await getDocs(collection(db, 'sales'));
-    const tbody = document.getElementById('sales-tbody');
-    if (!tbody) return;
-    tbody.innerHTML = '';
+  // Exposer les gestionnaires globalement pour le debugging
+  window.userManager = null; // Sera défini dans UserManager.init()
+});
 
-    querySnapshot.forEach((docSnap) => {
-      const sale = docSnap.data();
-      const agentName = usersMap[sale.agentId] || 'Inconnu';
-      const row = document.createElement('tr');
-
-      row.innerHTML = `
-        <td>${agentName}</td>
-        <td>${formatCFA(sale.chiffreAffaires)}</td>
-        <td>${formatCFA(sale.montantReel)}</td>
-        <td>${formatCFA(sale.benefice)}</td>
-        <td>${sale.tauxCommission}%</td>
-        <td>${formatCFA(sale.commission)}</td>
-      `;
-
-      tbody.appendChild(row);
-    });
-
-  } catch (error) {
-    const errorBox = document.getElementById('error-message');
-    if (errorBox) {
-      errorBox.textContent = error.message;
-    } else {
-      console.error(error);
-    }
-  }
-}
+// Export pour les tests
+export { AdminInterface, UIUtils };
