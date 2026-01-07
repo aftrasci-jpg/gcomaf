@@ -1,6 +1,7 @@
 import { db } from './firebase.js';
 import { collection, addDoc, getDocs, doc, updateDoc, deleteDoc, serverTimestamp, query, where } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js';
 import { checkAuth } from './auth.js';
+import { formatCFA } from './utils.js';
 
 // Role protection
 checkAuth('admin');
@@ -31,10 +32,10 @@ async function loadDashboardStats() {
     }, { sales: 0, commissions: 0 });
 
     const salesEl = document.getElementById('sales-total');
-    if (salesEl) salesEl.textContent = totals.sales.toFixed(2) + '€';
+    if (salesEl) salesEl.textContent = formatCFA(totals.sales);
 
     const commissionsEl = document.getElementById('commissions-total');
-    if (commissionsEl) commissionsEl.textContent = totals.commissions.toFixed(2) + '€';
+    if (commissionsEl) commissionsEl.textContent = formatCFA(totals.commissions);
 
   } catch (error) {
     const errorBox = document.getElementById('error-message');
@@ -525,8 +526,8 @@ function calculateCommission() {
   const benefice = ca - mr;
   const commission = benefice * (tc / 100);
 
-  if (beneficeEl) beneficeEl.textContent = benefice.toFixed(2);
-  if (commissionEl) commissionEl.textContent = commission.toFixed(2);
+  if (beneficeEl) beneficeEl.textContent = formatCFA(benefice);
+  if (commissionEl) commissionEl.textContent = formatCFA(commission);
 }
 
 async function createSale(agentId, chiffreAffaires, montantReel, tauxCommission, benefice, commission) {
@@ -575,11 +576,11 @@ async function loadSales() {
 
       row.innerHTML = `
         <td>${agentName}</td>
-        <td>${sale.chiffreAffaires}€</td>
-        <td>${sale.montantReel}€</td>
-        <td>${sale.benefice}€</td>
+        <td>${formatCFA(sale.chiffreAffaires)}</td>
+        <td>${formatCFA(sale.montantReel)}</td>
+        <td>${formatCFA(sale.benefice)}</td>
         <td>${sale.tauxCommission}%</td>
-        <td>${sale.commission}€</td>
+        <td>${formatCFA(sale.commission)}</td>
       `;
 
       tbody.appendChild(row);
