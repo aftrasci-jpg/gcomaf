@@ -1,5 +1,6 @@
 import { db } from './firebase.js';
 import { collection, getDocs } from 'firebase/firestore';
+import { formatCFA } from './utils.js';
 
 // Charger toutes les données
 async function loadAllData() {
@@ -56,8 +57,8 @@ async function loadAllData() {
       const row = document.createElement('tr');
       row.innerHTML = `
         <td>${agentName}</td>
-        <td>${sale.chiffreAffaires || 0}€</td>
-        <td>${sale.commission || 0}€</td>
+        <td>${formatCFA(sale.chiffreAffaires || 0)}</td>
+        <td>${formatCFA(sale.commission || 0)}</td>
       `;
       salesTbody.appendChild(row);
     });
