@@ -466,6 +466,28 @@ document.addEventListener('DOMContentLoaded', () => {
   if (document.getElementById('sales-tbody')) {
     loadSales();
   }
+
+  // Fix UX bug: Auto-close sidenav on mobile after clicking nav links
+  const sidenav = document.getElementById("sidenav-main");
+  const toggler = document.getElementById("iconNavbarSidenav");
+
+  if (sidenav) {
+    const navLinks = sidenav.querySelectorAll(".nav-link");
+
+    navLinks.forEach(link => {
+      link.addEventListener("click", () => {
+        // Remove pinned class if present
+        if (document.body.classList.contains("g-sidenav-pinned")) {
+          document.body.classList.remove("g-sidenav-pinned");
+        }
+
+        // Trigger the toggler button to close the menu
+        if (toggler && window.innerWidth < 1200) {
+          toggler.click();
+        }
+      });
+    });
+  }
 });
 // Fonctions pour les ventes
 async function loadAgentsForSelect() {

@@ -52,3 +52,8 @@
   border-radius: 8px;
   margin: 0 auto;
 }
+
+/* Fix for sidenav UX bug - ensure body remains scrollable */
+body.g-sidenav-pinned {
+  overflow: auto !important;
+}
