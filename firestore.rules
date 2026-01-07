@@ -1,0 +1,108 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /* =========================
+       HELPERS
+    ========================= */
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && getUserData().role == 'admin';
+    }
+
+    function isAgent() {
+      return isAuthenticated() && getUserData().role == 'agent';
+    }
+
+    function isSupervisor() {
+      return isAuthenticated() && getUserData().role == 'supervisor';
+    }
+
+    function isActive() {
+      return getUserData().status == 'active';
+    }
+
+    /* =========================
+       USERS
+    ========================= */
+    match /users/{userId} {
+      allow read, write: if isAdmin() && isActive();
+      allow read: if isAuthenticated() && isActive() && request.auth.uid == userId;
+    }
+
+    /* =========================
+       PROSPECTION FORMS
+    ========================= */
+    match /prospection_forms/{formId} {
+      allow read: if isAuthenticated() && isActive();
+      allow write: if isAdmin() && isActive();
+    }
+
+    /* =========================
+       PROSPECTS  (PRIVÉ AGENT)
+       ⚠️ ADMIN & SUPERVISOR N’Y ONT JAMAIS ACCÈS
+    ========================= */
+    match /prospects/{prospectId} {
+
+      // Lire uniquement SES prospects
+      allow read: if isAgent()
+                  && isActive()
+                  && request.auth.uid == resource.data.agentId;
+
+      // Créer uniquement pour lui-même
+      allow create: if isAgent()
+                    && isActive()
+                    && request.auth.uid == request.resource.data.agentId;
+
+      // Modifier uniquement les siens
+      allow update: if isAgent()
+                    && isActive()
+                    && request.auth.uid == resource.data.agentId;
+
+      // Supprimer uniquement les siens (lors conversion)
+      allow delete: if isAgent()
+                    && isActive()
+                    && request.auth.uid == resource.data.agentId;
+    }
+
+    /* =========================
+       CLIENTS (VISIBLE ADMIN)
+    ========================= */
+    match /clients/{clientId} {
+
+      // Lecture : admin, supervisor, agent actif
+      allow read: if isAuthenticated() && isActive();
+
+      // Création : uniquement l’agent propriétaire
+      allow create: if isAgent()
+                    && isActive()
+                    && request.auth.uid == request.resource.data.agentId;
+
+      // Pas de modification ni suppression
+      allow update, delete: if false;
+    }
+
+    /* =========================
+       SALES
+    ========================= */
+    match /sales/{saleId} {
+      allow read: if isAuthenticated() && isActive();
+      allow write: if isAdmin() && isActive();
+    }
+
+    /* =========================
+       COMMISSIONS
+    ========================= */
+    match /commissions/{commissionId} {
+      allow read: if isAuthenticated() && isActive();
+      allow write: if isAdmin() && isActive();
+    }
+  }
+}

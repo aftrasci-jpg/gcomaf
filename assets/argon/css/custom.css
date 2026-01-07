@@ -1,0 +1,44 @@
+/* Custom styles for CRM project */
+
+/* Login page styles */
+.login-wrapper {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+.login-card {
+  max-width: 500px;
+  width: 100%;
+  margin: 2rem;
+}
+.login-sections .login-section {
+  margin-bottom: 2rem;
+}
+.login-sections .login-section:last-child {
+  margin-bottom: 0;
+}
+.btn-google {
+  background-color: #4285f4;
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  transition: all 0.2s;
+}
+.btn-google:hover {
+  background-color: #3367d6;
+  color: white;
+}
+.google-icon {
+  width: 18px;
+  height: 18px;
+}
