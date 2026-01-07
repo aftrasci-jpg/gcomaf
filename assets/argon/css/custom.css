@@ -57,3 +57,22 @@
 body.g-sidenav-pinned {
   overflow: auto !important;
 }
+
+/* Dashboard cards hover animations */
+.card {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+}
+
+.card:hover {
+  transform: translateY(-8px) scale(1.02);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+}
+
+.card .icon-shape {
+  transition: all 0.3s ease;
+}
+
+.card:hover .icon-shape {
+  transform: scale(1.1) rotate(5deg);
+}
