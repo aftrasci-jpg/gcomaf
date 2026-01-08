@@ -824,6 +824,60 @@ class SalesManager {
 }
 
 /**
+ * Gestion stable de la sidenav (mobile + desktop)
+ * Remplace les comportements buggés d'Argon en mobile
+ */
+function initStableSidenav() {
+  const body = document.body;
+  const sidenav = document.getElementById("sidenav-main");
+  const openBtn = document.getElementById("iconNavbarSidenav");
+  const closeBtn = document.getElementById("iconSidenav");
+
+  if (!sidenav || !openBtn) return;
+
+  function openSidenav() {
+    body.classList.add("g-sidenav-pinned");
+    sidenav.classList.add("show");
+    body.style.overflow = "hidden";
+  }
+
+  function closeSidenav() {
+    body.classList.remove("g-sidenav-pinned");
+    sidenav.classList.remove("show");
+    body.style.overflow = "";
+  }
+
+  // Ouvrir le menu
+  openBtn.addEventListener("click", (e) => {
+    e.preventDefault();
+    openSidenav();
+  });
+
+  // Fermer via l'icône X
+  if (closeBtn) {
+    closeBtn.addEventListener("click", closeSidenav);
+  }
+
+  // Fermer après clic sur un lien (mobile)
+  sidenav.querySelectorAll("a.nav-link").forEach(link => {
+    link.addEventListener("click", () => {
+      if (window.innerWidth < 1200) closeSidenav();
+    });
+  });
+
+  // Fermer si clic en dehors du menu
+  document.addEventListener("click", (e) => {
+    if (
+      body.classList.contains("g-sidenav-pinned") &&
+      !sidenav.contains(e.target) &&
+      !openBtn.contains(e.target)
+    ) {
+      closeSidenav();
+    }
+  });
+}
+
+/**
  * Garde-fou contre la gestion des formulaires - DÉFINITIVEMENT SUPPRIMÉE
  */
 function forbidFormManagement() {
@@ -856,8 +910,8 @@ class AdminInterface {
         this.managers.sales.init()
       ]);
 
-      // Fix UX bug: Auto-close sidenav on mobile
-      this.initSidenavFix();
+      // Initialisation de la navigation stable
+      initStableSidenav();
 
       console.log('Interface admin initialisée avec succès');
 
@@ -867,28 +921,7 @@ class AdminInterface {
     }
   }
 
-  initSidenavFix() {
-    const sidenav = document.getElementById("sidenav-main");
-    const toggler = document.getElementById("iconNavbarSidenav");
 
-    if (sidenav) {
-      const navLinks = sidenav.querySelectorAll(".nav-link");
-
-      navLinks.forEach(link => {
-        link.addEventListener("click", () => {
-          // Remove pinned class if present
-          if (document.body.classList.contains("g-sidenav-pinned")) {
-            document.body.classList.remove("g-sidenav-pinned");
-          }
-
-          // Trigger the toggler button to close the menu on mobile
-          if (toggler && window.innerWidth < 1200) {
-            toggler.click();
-          }
-        });
-      });
-    }
-  }
 }
 
 // Démarrage de l'application
