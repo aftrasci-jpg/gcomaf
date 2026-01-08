@@ -11,7 +11,6 @@ import { authAdminService } from './services/auth-admin.js';
 import { usersService } from './services/users.service.js';
 import { clientsService } from './services/clients.service.js';
 import { salesService } from './services/sales.service.js';
-import { formsService } from './services/forms.service.js';
 import { dashboardService } from './services/dashboard.service.js';
 
 // Protection d'accès admin
@@ -825,199 +824,10 @@ class SalesManager {
 }
 
 /**
- * Gestionnaire des formulaires
+ * Garde-fou contre la gestion des formulaires - DÉFINITIVEMENT SUPPRIMÉE
  */
-class FormsManager {
-  constructor() {
-    this.formsTable = null;
-  }
-
-  async init() {
-    this.formsTable = document.getElementById('forms-tbody');
-
-    if (this.formsTable) {
-      await this.loadForms();
-      this.bindEvents();
-    }
-
-    // Formulaire de création
-    const formForm = document.getElementById('create-form-form');
-    if (formForm) {
-      formForm.addEventListener('submit', (e) => this.handleFormSubmit(e));
-    }
-
-    // Bouton d'ajout de champ
-    const addFieldBtn = document.getElementById('add-field-btn');
-    if (addFieldBtn) {
-      addFieldBtn.addEventListener('click', () => this.addField());
-    }
-  }
-
-  async loadForms() {
-    try {
-      UIUtils.showLoading('Chargement des formulaires...');
-      const forms = await formsService.getAllForms();
-
-      if (!this.formsTable) return;
-
-      this.formsTable.innerHTML = '';
-
-      forms.forEach(form => {
-        const row = this.createFormRow(form);
-        this.formsTable.appendChild(row);
-      });
-
-      UIUtils.hideLoading();
-
-    } catch (error) {
-      UIUtils.hideLoading();
-      UIUtils.showError('Erreur lors du chargement des formulaires: ' + error.message);
-    }
-  }
-
-  createFormRow(form) {
-    const row = document.createElement('tr');
-
-    row.innerHTML = `
-      <td>${form.title}</td>
-      <td>${form.description}</td>
-      <td>
-        <button class="btn btn-danger btn-sm btn-delete-form" data-id="${form.id}">
-          <i class="fas fa-trash"></i> Supprimer
-        </button>
-      </td>
-    `;
-
-    return row;
-  }
-
-  bindEvents() {
-    document.addEventListener('click', async (e) => {
-      if (e.target.closest('.btn-delete-form')) {
-        const button = e.target.closest('.btn-delete-form');
-        const formId = button.dataset.id;
-
-        await this.deleteForm(formId);
-      }
-
-      if (e.target.closest('.remove-field-btn')) {
-        const button = e.target.closest('.remove-field-btn');
-        const fieldDiv = button.closest('.field-item');
-        if (fieldDiv) {
-          fieldDiv.remove();
-        }
-      }
-    });
-  }
-
-  addField() {
-    const container = document.getElementById('fields-container');
-    if (!container) return;
-
-    const fieldDiv = document.createElement('div');
-    fieldDiv.className = 'field-item border rounded p-3 mb-3';
-
-    fieldDiv.innerHTML = `
-      <div class="row">
-        <div class="col-md-3">
-          <label class="form-label">Nom du champ</label>
-          <input type="text" class="form-control field-name" required>
-        </div>
-        <div class="col-md-3">
-          <label class="form-label">Label</label>
-          <input type="text" class="form-control field-label" required>
-        </div>
-        <div class="col-md-2">
-          <label class="form-label">Type</label>
-          <select class="form-control field-type">
-            <option value="text">Texte</option>
-            <option value="email">Email</option>
-            <option value="tel">Téléphone</option>
-            <option value="textarea">Zone de texte</option>
-          </select>
-        </div>
-        <div class="col-md-2">
-          <label class="form-label">Obligatoire</label>
-          <div class="form-check mt-2">
-            <input type="checkbox" class="form-check-input field-required">
-          </div>
-        </div>
-        <div class="col-md-2">
-          <label class="form-label">&nbsp;</label>
-          <button type="button" class="btn btn-danger btn-sm remove-field-btn w-100">
-            <i class="fas fa-times"></i>
-          </button>
-        </div>
-      </div>
-    `;
-
-    container.appendChild(fieldDiv);
-  }
-
-  collectFields() {
-    const fields = [];
-    const fieldItems = document.querySelectorAll('.field-item');
-
-    fieldItems.forEach(item => {
-      const name = item.querySelector('.field-name')?.value;
-      const label = item.querySelector('.field-label')?.value;
-      const type = item.querySelector('.field-type')?.value;
-      const required = item.querySelector('.field-required')?.checked;
-
-      if (name && label) {
-        fields.push({ name, label, type, required });
-      }
-    });
-
-    return fields;
-  }
-
-  async handleFormSubmit(e) {
-    e.preventDefault();
-
-    const title = document.getElementById('form-title')?.value;
-    const description = document.getElementById('form-description')?.value;
-    const fields = this.collectFields();
-
-    try {
-      UIUtils.showLoading('Création du formulaire...');
-
-      await formsService.createForm(title, description, fields);
-
-      UIUtils.hideLoading();
-      UIUtils.showSuccess('Formulaire créé avec succès');
-
-      // Réinitialiser le formulaire
-      e.target.reset();
-      document.getElementById('fields-container').innerHTML = '';
-
-      // Recharger la liste
-      await this.loadForms();
-
-    } catch (error) {
-      UIUtils.hideLoading();
-      UIUtils.showError('Erreur lors de la création du formulaire: ' + error.message);
-    }
-  }
-
-  async deleteForm(formId) {
-    if (!UIUtils.confirmAction('Êtes-vous sûr de vouloir supprimer ce formulaire ?')) {
-      return;
-    }
-
-    try {
-      UIUtils.showLoading('Suppression du formulaire...');
-      await formsService.deleteForm(formId);
-      UIUtils.hideLoading();
-      UIUtils.showSuccess('Formulaire supprimé avec succès');
-
-      await this.loadForms();
-
-    } catch (error) {
-      UIUtils.hideLoading();
-      UIUtils.showError('Erreur lors de la suppression: ' + error.message);
-    }
-  }
+function forbidFormManagement() {
+  throw new Error("Gestion des formulaires désactivée définitivement.");
 }
 
 /**
@@ -1037,15 +847,13 @@ class AdminInterface {
       this.managers.userCreation = new UserCreationManager();
       this.managers.clients = new ClientsManager();
       this.managers.sales = new SalesManager();
-      this.managers.forms = new FormsManager();
 
       // Initialiser chaque gestionnaire
       await Promise.all([
         this.managers.dashboard.init(),
         this.managers.users.init(),
         this.managers.userCreation.init(),
-        this.managers.sales.init(),
-        this.managers.forms.init()
+        this.managers.sales.init()
       ]);
 
       // Fix UX bug: Auto-close sidenav on mobile

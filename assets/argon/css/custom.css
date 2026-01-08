@@ -1,5 +1,63 @@
 /* Custom styles for CRM project */
 
+/* Empêche tout débordement horizontal */
+html, body {
+  overflow-x: hidden;
+}
+
+/* Sécurise la zone principale */
+.main-content {
+  overflow-x: hidden;
+}
+
+/* Position de base */
+#sidenav-main {
+  left: 0;
+  transform: translateX(0);
+  transition: transform 0.3s ease;
+  will-change: transform;
+}
+
+/* État caché */
+body.g-sidenav-hidden #sidenav-main {
+  transform: translateX(-100%);
+}
+
+/* Empêche tout dépassement visuel */
+.sidenav {
+  overflow: hidden;
+}
+
+/* Corrige les écrans mobiles */
+@media (max-width: 1199px) {
+  #sidenav-main {
+    position: fixed !important;
+    left: 0;
+    top: 0;
+    height: 100vh;
+    transform: translateX(-100%);
+    z-index: 1000;
+    overflow-y: auto;
+  }
+
+  body.g-sidenav-show #sidenav-main {
+    transform: translateX(0);
+  }
+}
+
+/* Overlay for mobile */
+#sidenav-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.45);
+  z-index: 999;
+  display: none;
+}
+
+#sidenav-overlay.active {
+  display: block;
+}
+
 /* Login page styles */
 .login-wrapper {
   min-height: 100vh;
@@ -77,43 +135,7 @@ body.g-sidenav-pinned {
   transform: scale(1.1) rotate(5deg);
 }
 
-/* ===============================
-   SIDENAV MOBILE FIX
-================================ */
 
-#sidenav-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,.45);
-  z-index: 999;
-  display: none;
-}
-
-#sidenav-overlay.active {
-  display: block;
-}
-
-@media (max-width: 991px) {
-
-  #sidenav-main {
-    position: fixed !important;
-    left: 0;
-    top: 0;
-    height: 100vh;
-    transform: translateX(-100%);
-    transition: transform .3s ease;
-    z-index: 1000;
-    overflow-y: auto;
-  }
-
-  #sidenav-main.show {
-    transform: translateX(0);
-  }
-
-  body.g-sidenav-pinned {
-    overflow: hidden;
-  }
-}
 
 /* Styles pour les cartes cliquables du dashboard */
 .dashboard-card {

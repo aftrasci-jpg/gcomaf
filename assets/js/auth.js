@@ -131,5 +131,33 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 
+import { signOut } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
+
+// Vérification des permissions
+export function checkPermission(action) {
+  if (action === "FORM_MANAGEMENT") {
+    console.error("Accès refusé : gestion des formulaires supprimée.");
+    return false;
+  }
+  return true;
+}
+
+// Fonction de déconnexion
+export async function logout() {
+  try {
+    await signOut(auth);
+
+    // Nettoyage session
+    localStorage.clear();
+    sessionStorage.clear();
+
+    // Redirection vers login
+    window.location.href = "/index.html";
+  } catch (error) {
+    console.error("Erreur déconnexion :", error);
+    alert("Erreur lors de la déconnexion.");
+  }
+}
+
 // Exporter les fonctions pour les gardes
 export { checkAuth };

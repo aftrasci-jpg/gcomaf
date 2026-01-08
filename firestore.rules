@@ -104,5 +104,13 @@ service cloud.firestore {
       allow read: if isAuthenticated() && isActive();
       allow write: if isAdmin() && isActive();
     }
+
+    /* =========================
+       FORMS - GESTION SUPPRIMÉE DÉFINITIVEMENT
+    ========================= */
+    match /forms/{formId} {
+      allow read: if request.auth != null;
+      allow create, update, delete: if false;
+    }
   }
 }

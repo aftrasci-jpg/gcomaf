@@ -2,6 +2,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const sidenav = document.getElementById("sidenav-main");
   const toggler = document.getElementById("iconNavbarSidenav");
   const navLinks = document.querySelectorAll("#sidenav-main .nav-link");
+  const body = document.body;
 
   if (!sidenav || !toggler) return;
 
@@ -11,25 +12,21 @@ document.addEventListener("DOMContentLoaded", () => {
   document.body.appendChild(overlay);
 
   function openSidenav() {
-    sidenav.classList.add("show");
-    document.body.classList.add("g-sidenav-pinned");
+    body.classList.add("g-sidenav-show");
+    body.classList.remove("g-sidenav-hidden");
     overlay.classList.add("active");
   }
 
   function closeSidenav() {
-    sidenav.classList.remove("show");
-    document.body.classList.remove("g-sidenav-pinned");
+    body.classList.remove("g-sidenav-show");
+    body.classList.add("g-sidenav-hidden");
     overlay.classList.remove("active");
   }
 
   // Toggle bouton hamburger
-  toggler.addEventListener("click", (e) => {
-    e.stopPropagation();
-    if (sidenav.classList.contains("show")) {
-      closeSidenav();
-    } else {
-      openSidenav();
-    }
+  toggler.addEventListener("click", () => {
+    body.classList.toggle("g-sidenav-show");
+    body.classList.toggle("g-sidenav-hidden");
   });
 
   // Clic sur un lien => ferme
@@ -45,7 +42,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // Sécurité : clic extérieur
   document.addEventListener("click", (e) => {
     if (
-      sidenav.classList.contains("show") &&
+      body.classList.contains("g-sidenav-show") &&
       !sidenav.contains(e.target) &&
       !toggler.contains(e.target)
     ) {
