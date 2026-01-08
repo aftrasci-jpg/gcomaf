@@ -112,6 +112,7 @@ class UIUtils {
 class UserManager {
   constructor() {
     this.usersTable = null;
+    this.statsUpdated = false;
   }
 
   async init() {
@@ -125,7 +126,10 @@ class UserManager {
   async loadUsers() {
     try {
       UIUtils.showLoading('Chargement des utilisateurs...');
-      const users = await usersService.getAllUsers();
+      const [users, stats] = await Promise.all([
+        usersService.getAllUsers(),
+        usersService.getUserStats()
+      ]);
 
       if (!this.usersTable) return;
 
@@ -136,12 +140,29 @@ class UserManager {
         this.usersTable.appendChild(row);
       });
 
+      // Mettre à jour les statistiques
+      this.updateStats(stats);
+
       UIUtils.hideLoading();
 
     } catch (error) {
       UIUtils.hideLoading();
       UIUtils.showError('Erreur lors du chargement des utilisateurs: ' + error.message);
     }
+  }
+
+  updateStats(stats) {
+    const totalEl = document.getElementById('total-users');
+    const activeEl = document.getElementById('active-users');
+    const agentEl = document.getElementById('agent-count');
+    const supervisorEl = document.getElementById('supervisor-count');
+
+    if (totalEl) totalEl.textContent = stats.total;
+    if (activeEl) activeEl.textContent = stats.active;
+    if (agentEl) agentEl.textContent = stats.byRole.agent || 0;
+    if (supervisorEl) supervisorEl.textContent = stats.byRole.supervisor || 0;
+
+    this.statsUpdated = true;
   }
 
   createUserRow(user) {
