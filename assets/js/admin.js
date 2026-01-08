@@ -124,6 +124,9 @@ class UserManager {
       this.initSearch();
       this.initModal();
     }
+
+    // 🔥 IMPORTANT
+    window.userManager = this;
   }
 
   async loadUsers() {
@@ -929,8 +932,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Initialiser l'interface admin
   window.adminInterface = new AdminInterface();
 
-  // Exposer les gestionnaires globalement pour le debugging
-  window.userManager = null; // Sera défini dans UserManager.init()
+  // Les gestionnaires sont exposés globalement dans leur méthode init() respective
 });
 
 // Export pour les tests
