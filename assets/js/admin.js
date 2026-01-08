@@ -544,56 +544,7 @@ class DashboardManager {
   }
 }
 
-/**
- * Gestionnaire des clients
- */
-class ClientsManager {
-  constructor() {
-    this.clientsTable = null;
-  }
 
-  async init() {
-    this.clientsTable = document.getElementById('clients-tbody');
-    if (this.clientsTable) {
-      await this.loadClients();
-    }
-  }
-
-  async loadClients() {
-    try {
-      UIUtils.showLoading('Chargement des clients...');
-      const clients = await clientsService.getAllClients();
-
-      if (!this.clientsTable) return;
-
-      this.clientsTable.innerHTML = '';
-
-      clients.forEach(client => {
-        const row = this.createClientRow(client);
-        this.clientsTable.appendChild(row);
-      });
-
-      UIUtils.hideLoading();
-
-    } catch (error) {
-      UIUtils.hideLoading();
-      UIUtils.showError('Erreur lors du chargement des clients: ' + error.message);
-    }
-  }
-
-  createClientRow(client) {
-    const row = document.createElement('tr');
-
-    row.innerHTML = `
-      <td>${client.data?.name || 'N/A'}</td>
-      <td>${client.data?.email || 'N/A'}</td>
-      <td>${client.confirmedAt.toLocaleDateString('fr-FR')}</td>
-      <td>${client.agentName}</td>
-    `;
-
-    return row;
-  }
-}
 
 /**
  * Gestionnaire des ventes
@@ -622,14 +573,43 @@ class SalesManager {
   async loadSales() {
     try {
       UIUtils.showLoading('Chargement des ventes...');
-      const sales = await salesService.getAllSales();
+
+      // Récupérer les ventes, clients et utilisateurs
+      const [sales, clients, users, commissions] = await Promise.all([
+        salesService.getAllSales(),
+        clientsService.getAllClients(),
+        usersService.getAllUsers(),
+        this.getAllCommissions()
+      ]);
+
+      // Créer des maps pour un accès rapide
+      const clientsMap = {};
+      clients.forEach(client => {
+        const clientData = client.data || {};
+        const clientName = `${clientData.firstName || clientData.prenom || ''} ${clientData.lastName || clientData.nom || ''}`.trim();
+        clientsMap[client.id] = clientName || 'Client inconnu';
+      });
+
+      const usersMap = {};
+      users.forEach(user => {
+        usersMap[user.id] = `${user.firstName} ${user.lastName}`;
+      });
+
+      const commissionsMap = {};
+      commissions.forEach(commission => {
+        commissionsMap[commission.saleId] = commission;
+      });
 
       if (!this.salesTable) return;
 
       this.salesTable.innerHTML = '';
 
       sales.forEach(sale => {
-        const row = this.createSaleRow(sale);
+        const clientName = clientsMap[sale.clientId] || 'Client inconnu';
+        const agentName = usersMap[sale.agentId] || 'Agent inconnu';
+        const commission = commissionsMap[sale.id];
+
+        const row = this.createSaleRow(sale, clientName, agentName, commission);
         this.salesTable.appendChild(row);
       });
 
@@ -641,19 +621,106 @@ class SalesManager {
     }
   }
 
-  createSaleRow(sale) {
+  /**
+   * Récupère toutes les commissions
+   */
+  async getAllCommissions() {
+    const { collection, getDocs } = await import('https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js');
+    const { db } = await import('./firebase.js');
+
+    const commissionsSnapshot = await getDocs(collection(db, 'commissions'));
+    const commissions = [];
+
+    commissionsSnapshot.forEach(doc => {
+      commissions.push({
+        id: doc.id,
+        ...doc.data(),
+        createdAt: doc.data().createdAt?.toDate?.() || new Date(doc.data().createdAt),
+        paidAt: doc.data().paidAt?.toDate?.() || null
+      });
+    });
+
+    return commissions;
+  }
+
+  createSaleRow(sale, clientName, agentName, commission) {
     const row = document.createElement('tr');
 
+    // Formater la date
+    const saleDate = sale.createdAt?.toDate?.() ? sale.createdAt.toDate() : new Date(sale.createdAt);
+    const formattedDate = this.formatDate(saleDate);
+
+    // Déterminer le statut de la commission
+    let commissionStatus = 'Non créée';
+    let statusBadge = '<span class="badge bg-secondary">Non créée</span>';
+
+    if (commission) {
+      if (commission.status === 'paid') {
+        commissionStatus = 'Payée';
+        statusBadge = '<span class="badge bg-success"><i class="fas fa-check me-1"></i>Payée</span>';
+      } else {
+        commissionStatus = 'En attente';
+        statusBadge = '<span class="badge bg-warning"><i class="fas fa-clock me-1"></i>En attente</span>';
+      }
+    }
+
     row.innerHTML = `
-      <td>${sale.agentName}</td>
-      <td>${formatCFA(sale.chiffreAffaires)}</td>
-      <td>${formatCFA(sale.montantReel)}</td>
-      <td>${formatCFA(sale.benefice)}</td>
-      <td>${sale.tauxCommission}%</td>
-      <td>${formatCFA(sale.commission)}</td>
+      <td>
+        <div class="d-flex align-items-center">
+          <div class="avatar avatar-sm me-3">
+            <i class="fas fa-user-circle fa-lg text-primary"></i>
+          </div>
+          <div>
+            <span class="font-weight-bold">${clientName}</span>
+          </div>
+        </div>
+      </td>
+      <td>
+        <div class="d-flex align-items-center">
+          <div class="avatar avatar-xs me-2">
+            <i class="fas fa-user-tie text-secondary"></i>
+          </div>
+          <span>${agentName}</span>
+        </div>
+      </td>
+      <td>
+        <span class="badge bg-info">${formatCFA(sale.chiffreAffaires)}</span>
+      </td>
+      <td>
+        <span class="badge bg-secondary">${formatCFA(sale.montantReel)}</span>
+      </td>
+      <td>
+        <span class="badge bg-warning">${formatCFA(sale.benefice)}</span>
+      </td>
+      <td>
+        <span class="badge bg-primary">${sale.tauxCommission}%</span>
+      </td>
+      <td>
+        <span class="fw-bold text-success">${formatCFA(sale.commission)}</span>
+      </td>
+      <td>
+        <span class="text-sm">${formattedDate}</span>
+      </td>
+      <td>
+        ${statusBadge}
+      </td>
     `;
 
     return row;
+  }
+
+  /**
+   * Formate une date pour l'affichage
+   */
+  formatDate(date) {
+    if (!date) return 'N/A';
+    return date.toLocaleDateString('fr-FR', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
   }
 
   async loadAgentsForSelect() {
@@ -977,7 +1044,6 @@ class AdminInterface {
         this.managers.dashboard.init(),
         this.managers.users.init(),
         this.managers.userCreation.init(),
-        this.managers.clients.init(),
         this.managers.sales.init(),
         this.managers.forms.init()
       ]);

@@ -147,11 +147,21 @@ class ClientsConfirmesManager {
         </div>
       </td>
       <td>
-        <button class="btn btn-sm btn-outline-primary btn-info-client"
-                data-client-id="${client.id}"
-                title="Voir les détails">
-          <i class="fas fa-eye"></i> Infos
-        </button>
+        <div class="btn-group btn-group-sm">
+          <button class="btn btn-sm btn-outline-primary btn-info-client"
+                  data-client-id="${client.id}"
+                  title="Voir les détails">
+            <i class="fas fa-eye"></i> Infos
+          </button>
+          <button class="btn btn-sm btn-success btn-sell-client"
+                  data-client-id="${client.id}"
+                  data-client-name="${firstName} ${lastName}"
+                  data-agent-id="${client.agentId}"
+                  data-agent-name="${client.agentName}"
+                  title="Conclure une vente">
+            <i class="fas fa-shopping-cart"></i> Vendre
+          </button>
+        </div>
       </td>
     `;
 
@@ -230,7 +240,23 @@ class ClientsConfirmesManager {
         const clientId = button.dataset.clientId;
         await this.showClientDetails(clientId);
       }
+
+      // Bouton de vente
+      if (e.target.closest('.btn-sell-client')) {
+        const button = e.target.closest('.btn-sell-client');
+        const clientId = button.dataset.clientId;
+        const clientName = button.dataset.clientName;
+        const agentId = button.dataset.agentId;
+        const agentName = button.dataset.agentName;
+        await this.showSaleModal(clientId, clientName, agentId, agentName);
+      }
     });
+
+    // Formulaire de vente
+    const saleForm = document.getElementById('create-sale-form');
+    if (saleForm) {
+      saleForm.addEventListener('submit', (e) => this.handleSaleSubmit(e));
+    }
   }
 
   /**
@@ -404,6 +430,239 @@ class ClientsConfirmesManager {
         errorEl.style.display = 'none';
       }, 5000);
     }
+  }
+
+  /**
+   * Affiche le modal de création de vente
+   */
+  async showSaleModal(clientId, clientName, agentId, agentName) {
+    try {
+      // Pré-remplir le modal
+      const clientNameEl = document.getElementById('sale-client-name');
+      const agentNameEl = document.getElementById('sale-agent-name');
+      const form = document.getElementById('create-sale-form');
+
+      if (clientNameEl) clientNameEl.textContent = clientName;
+      if (agentNameEl) agentNameEl.textContent = agentName;
+
+      // Stocker les données dans le formulaire
+      if (form) {
+        form.dataset.clientId = clientId;
+        form.dataset.agentId = agentId;
+      }
+
+      // Réinitialiser le formulaire
+      this.resetSaleForm();
+
+      // Ouvrir le modal
+      const modal = new bootstrap.Modal(document.getElementById('saleModal'));
+      modal.show();
+
+      // Attacher les événements de calcul
+      this.attachSaleCalculationEvents();
+
+    } catch (error) {
+      this.showError('Erreur lors de l\'ouverture du modal de vente: ' + error.message);
+    }
+  }
+
+  /**
+   * Réinitialise le formulaire de vente
+   */
+  resetSaleForm() {
+    const form = document.getElementById('create-sale-form');
+    if (form) {
+      form.reset();
+      // Valeurs par défaut
+      const tauxCommissionEl = document.getElementById('sale-taux-commission');
+      if (tauxCommissionEl) tauxCommissionEl.value = '15';
+
+      // Réinitialiser les champs calculés
+      this.updateSaleCalculations();
+    }
+  }
+
+  /**
+   * Attache les événements de calcul pour le formulaire de vente
+   */
+  attachSaleCalculationEvents() {
+    const caInput = document.getElementById('sale-chiffre-affaires');
+    const mrInput = document.getElementById('sale-montant-reel');
+    const tauxInput = document.getElementById('sale-taux-commission');
+
+    const updateCalculations = () => this.updateSaleCalculations();
+
+    if (caInput) caInput.addEventListener('input', updateCalculations);
+    if (mrInput) mrInput.addEventListener('input', updateCalculations);
+    if (tauxInput) tauxInput.addEventListener('input', updateCalculations);
+  }
+
+  /**
+   * Met à jour les calculs du formulaire de vente
+   */
+  updateSaleCalculations() {
+    const ca = parseFloat(document.getElementById('sale-chiffre-affaires')?.value) || 0;
+    const mr = parseFloat(document.getElementById('sale-montant-reel')?.value) || 0;
+    const taux = parseFloat(document.getElementById('sale-taux-commission')?.value) || 0;
+
+    // Calcul du bénéfice
+    const benefice = ca - mr;
+    const commission = (benefice * taux) / 100;
+
+    // Mise à jour des champs affichés
+    const beneficeEl = document.getElementById('sale-benefice');
+    const commissionEl = document.getElementById('sale-commission');
+
+    if (beneficeEl) beneficeEl.textContent = this.formatCurrency(benefice);
+    if (commissionEl) commissionEl.textContent = this.formatCurrency(commission);
+  }
+
+  /**
+   * Formate un montant en devise
+   */
+  formatCurrency(amount) {
+    return new Intl.NumberFormat('fr-FR', {
+      style: 'currency',
+      currency: 'XAF',
+      minimumFractionDigits: 0
+    }).format(amount);
+  }
+
+  /**
+   * Gère la soumission du formulaire de vente
+   */
+  async handleSaleSubmit(e) {
+    e.preventDefault();
+
+    const form = e.target;
+    const clientId = form.dataset.clientId;
+    const agentId = form.dataset.agentId;
+
+    const saleData = {
+      clientId,
+      agentId,
+      chiffreAffaires: parseFloat(document.getElementById('sale-chiffre-affaires')?.value) || 0,
+      montantReel: parseFloat(document.getElementById('sale-montant-reel')?.value) || 0,
+      tauxCommission: parseFloat(document.getElementById('sale-taux-commission')?.value) || 15
+    };
+
+    // Validation
+    if (!clientId || !agentId) {
+      this.showError('Données client/agent manquantes');
+      return;
+    }
+
+    if (saleData.chiffreAffaires <= 0) {
+      this.showError('Le chiffre d\'affaires doit être supérieur à 0');
+      return;
+    }
+
+    if (saleData.montantReel < 0) {
+      this.showError('Le montant réel ne peut pas être négatif');
+      return;
+    }
+
+    if (saleData.montantReel > saleData.chiffreAffaires) {
+      this.showError('Le montant réel ne peut pas être supérieur au chiffre d\'affaires');
+      return;
+    }
+
+    // Confirmation
+    const benefice = saleData.chiffreAffaires - saleData.montantReel;
+    const commission = (benefice * saleData.tauxCommission) / 100;
+
+    const confirmMessage = `
+      Confirmer la vente ?
+
+      💰 Chiffre d'affaires: ${this.formatCurrency(saleData.chiffreAffaires)}
+      💵 Montant réel: ${this.formatCurrency(saleData.montantReel)}
+      📈 Bénéfice: ${this.formatCurrency(benefice)}
+      💎 Commission (${saleData.tauxCommission}%): ${this.formatCurrency(commission)}
+    `;
+
+    if (!confirm(confirmMessage)) {
+      return;
+    }
+
+    try {
+      this.showLoading('Création de la vente...');
+
+      // Créer la vente
+      const saleResult = await this.createSale(saleData);
+
+      // Créer la commission automatiquement
+      await this.createCommission({
+        saleId: saleResult.id,
+        agentId: saleData.agentId,
+        clientId: saleData.clientId,
+        benefice,
+        taux: saleData.tauxCommission,
+        amount: commission
+      });
+
+      this.hideLoading();
+
+      // Fermer le modal
+      const modal = bootstrap.Modal.getInstance(document.getElementById('saleModal'));
+      if (modal) modal.hide();
+
+      // Message de succès
+      alert(`✅ Vente créée avec succès !
+
+💰 Bénéfice: ${this.formatCurrency(benefice)}
+💎 Commission: ${this.formatCurrency(commission)}
+
+La commission a été automatiquement créée pour l'agent.`);
+
+    } catch (error) {
+      this.hideLoading();
+      this.showError('Erreur lors de la création de la vente: ' + error.message);
+    }
+  }
+
+  /**
+   * Crée une vente dans Firestore
+   */
+  async createSale(saleData) {
+    const { addDoc, collection } = await import('https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js');
+
+    const benefice = saleData.chiffreAffaires - saleData.montantReel;
+    const commission = (benefice * saleData.tauxCommission) / 100;
+
+    const saleDoc = {
+      clientId: saleData.clientId,
+      agentId: saleData.agentId,
+      chiffreAffaires: saleData.chiffreAffaires,
+      montantReel: saleData.montantReel,
+      benefice,
+      tauxCommission: saleData.tauxCommission,
+      commission,
+      createdAt: new Date()
+    };
+
+    const docRef = await addDoc(collection(db, 'sales'), saleDoc);
+    return { id: docRef.id, ...saleDoc };
+  }
+
+  /**
+   * Crée une commission dans Firestore
+   */
+  async createCommission(commissionData) {
+    const { addDoc, collection } = await import('https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js');
+
+    const commissionDoc = {
+      saleId: commissionData.saleId,
+      agentId: commissionData.agentId,
+      clientId: commissionData.clientId,
+      benefice: commissionData.benefice,
+      taux: commissionData.taux,
+      amount: commissionData.amount,
+      status: 'pending',
+      createdAt: new Date(),
+      paidAt: null
+    };
+
+    await addDoc(collection(db, 'commissions'), commissionDoc);
   }
 }
 

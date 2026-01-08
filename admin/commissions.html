@@ -7,7 +7,7 @@
   <link rel="apple-touch-icon" sizes="76x76" href="../assets/argon/img/logo.png">
   <link rel="icon" type="image/png" href="../assets/argon/img/logo.png">
   <title>
-    Clients Confirmés - CRM Admin
+    Commissions - CRM Admin
   </title>
   <!--     Fonts and icons     -->
   <link href="https://fonts.googleapis.com/css?family=Open+Sans:300,400,600,700" rel="stylesheet" />
@@ -51,7 +51,7 @@
           </a>
         </li>
         <li class="nav-item">
-          <a class="nav-link active" href="clients-confirmes.html">
+          <a class="nav-link" href="clients-confirmes.html">
             <div class="icon icon-shape icon-sm border-radius-md text-center me-2 d-flex align-items-center justify-content-center">
               <i class="ni ni-check-bold text-dark text-sm opacity-10"></i>
             </div>
@@ -74,6 +74,14 @@
             <span class="nav-link-text ms-1">Ventes</span>
           </a>
         </li>
+        <li class="nav-item">
+          <a class="nav-link active" href="commissions.html">
+            <div class="icon icon-shape icon-sm border-radius-md text-center me-2 d-flex align-items-center justify-content-center">
+              <i class="ni ni-diamond text-dark text-sm opacity-10"></i>
+            </div>
+            <span class="nav-link-text ms-1">Commissions</span>
+          </a>
+        </li>
       </ul>
     </div>
   </aside>
@@ -84,9 +92,9 @@
         <nav aria-label="breadcrumb">
           <ol class="breadcrumb bg-transparent mb-0 pb-0 pt-1 px-0 me-sm-6 me-5">
             <li class="breadcrumb-item text-sm"><a class="opacity-5 text-white" href="javascript:;">Pages</a></li>
-            <li class="breadcrumb-item text-sm text-white active" aria-current="page">Clients Confirmés</li>
+            <li class="breadcrumb-item text-sm text-white active" aria-current="page">Commissions</li>
           </ol>
-          <h6 class="font-weight-bolder text-white mb-0">Gestion des Clients Confirmés</h6>
+          <h6 class="font-weight-bolder text-white mb-0">Gestion des Commissions</h6>
         </nav>
         <div class="collapse navbar-collapse mt-sm-0 mt-2 me-md-0 me-sm-4" id="navbar">
           <div class="ms-md-auto pe-md-3 d-flex align-items-center">
@@ -123,6 +131,139 @@
         </div>
       </div>
 
+      <!-- Statistiques Commissions -->
+      <div class="row mb-4">
+        <div class="col-xl-3 col-sm-6 mb-xl-0 mb-4">
+          <div class="card">
+            <div class="card-body p-3">
+              <div class="row">
+                <div class="col-8">
+                  <div class="numbers">
+                    <p class="text-sm mb-0 text-uppercase font-weight-bold">Total Commissions</p>
+                    <h5 class="font-weight-bolder" id="total-commissions">0 FCFA</h5>
+                    <p class="mb-0">
+                      <span class="text-success text-sm font-weight-bolder">Toutes</span>
+                    </p>
+                  </div>
+                </div>
+                <div class="col-4 text-end">
+                  <div class="icon icon-shape bg-gradient-primary shadow-primary text-center rounded-circle">
+                    <i class="ni ni-money-coins text-lg opacity-10" aria-hidden="true"></i>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-xl-3 col-sm-6 mb-xl-0 mb-4">
+          <div class="card">
+            <div class="card-body p-3">
+              <div class="row">
+                <div class="col-8">
+                  <div class="numbers">
+                    <p class="text-sm mb-0 text-uppercase font-weight-bold">Total Payé</p>
+                    <h5 class="font-weight-bolder" id="total-paid">0 FCFA</h5>
+                    <p class="mb-0">
+                      <span class="text-success text-sm font-weight-bolder">Réglées</span>
+                    </p>
+                  </div>
+                </div>
+                <div class="col-4 text-end">
+                  <div class="icon icon-shape bg-gradient-success shadow-success text-center rounded-circle">
+                    <i class="ni ni-check-bold text-lg opacity-10" aria-hidden="true"></i>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-xl-3 col-sm-6 mb-xl-0 mb-4">
+          <div class="card">
+            <div class="card-body p-3">
+              <div class="row">
+                <div class="col-8">
+                  <div class="numbers">
+                    <p class="text-sm mb-0 text-uppercase font-weight-bold">En Attente</p>
+                    <h5 class="font-weight-bolder" id="total-pending">0 FCFA</h5>
+                    <p class="mb-0">
+                      <span class="text-warning text-sm font-weight-bolder">À payer</span>
+                    </p>
+                  </div>
+                </div>
+                <div class="col-4 text-end">
+                  <div class="icon icon-shape bg-gradient-warning shadow-warning text-center rounded-circle">
+                    <i class="ni ni-time-alarm text-lg opacity-10" aria-hidden="true"></i>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-xl-3 col-sm-6">
+          <div class="card">
+            <div class="card-body p-3">
+              <div class="row">
+                <div class="col-8">
+                  <div class="numbers">
+                    <p class="text-sm mb-0 text-uppercase font-weight-bold">Nombre Total</p>
+                    <h5 class="font-weight-bolder" id="total-count">0</h5>
+                    <p class="mb-0">
+                      <span class="text-info text-sm font-weight-bolder">Commissions</span>
+                    </p>
+                  </div>
+                </div>
+                <div class="col-4 text-end">
+                  <div class="icon icon-shape bg-gradient-info shadow-info text-center rounded-circle">
+                    <i class="ni ni-single-copy-04 text-lg opacity-10" aria-hidden="true"></i>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Résumé par statut -->
+      <div class="row mb-4">
+        <div class="col-12">
+          <div class="card">
+            <div class="card-header">
+              <h6 class="mb-0">Résumé par Statut</h6>
+            </div>
+            <div class="card-body">
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="alert alert-warning">
+                    <div class="d-flex align-items-center">
+                      <div class="text-warning me-3">
+                        <i class="fas fa-clock fa-2x"></i>
+                      </div>
+                      <div>
+                        <h6 class="alert-heading mb-1">En Attente</h6>
+                        <p class="mb-0" id="pending-summary">0 commissions — 0 FCFA</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="alert alert-success">
+                    <div class="d-flex align-items-center">
+                      <div class="text-success me-3">
+                        <i class="fas fa-check-circle fa-2x"></i>
+                      </div>
+                      <div>
+                        <h6 class="alert-heading mb-1">Payées</h6>
+                        <p class="mb-0" id="paid-summary">0 commissions — 0 FCFA</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Barre de recherche -->
       <div class="row mb-4">
         <div class="col-12">
@@ -132,8 +273,8 @@
                 <div class="col-md-8">
                   <div class="input-group">
                     <span class="input-group-text"><i class="fas fa-search"></i></span>
-                    <input type="text" id="client-search" class="form-control" placeholder="Rechercher par nom du client ou nom de l'agent...">
-                    <button class="btn btn-outline-secondary" type="button" id="clear-client-search">
+                    <input type="text" id="commission-search" class="form-control" placeholder="Rechercher par nom de l'agent ou nom du client...">
+                    <button class="btn btn-outline-secondary" type="button" id="clear-commission-search">
                       <i class="fas fa-times"></i>
                     </button>
                   </div>
@@ -142,7 +283,7 @@
                   <div class="d-flex align-items-center justify-content-end">
                     <small class="text-muted me-2">
                       <i class="fas fa-info-circle me-1"></i>
-                      <span id="client-count">0</span> clients trouvés
+                      <span id="commission-count">0</span> commissions trouvées
                     </small>
                   </div>
                 </div>
@@ -152,30 +293,33 @@
         </div>
       </div>
 
-      <!-- Table des clients confirmés -->
+      <!-- Table des commissions -->
       <div class="row">
         <div class="col-lg-12 mb-lg-0 mb-4">
           <div class="card">
             <div class="card-header pb-0 p-3">
               <div class="d-flex justify-content-between align-items-center">
-                <h6 class="mb-2">Clients Confirmés</h6>
-                <span class="badge bg-primary" id="total-clients-badge">0 clients</span>
+                <h6 class="mb-2">Commissions</h6>
+                <span class="badge bg-primary" id="total-commissions-badge">0 commissions</span>
               </div>
             </div>
             <div class="table-responsive">
               <table class="table align-items-center">
                 <thead>
                   <tr>
-                    <th>Nom</th>
-                    <th>Prénom</th>
-                    <th>Téléphone</th>
-                    <th>Date de confirmation</th>
-                    <th>Agent assigné</th>
+                    <th>Client</th>
+                    <th>Agent</th>
+                    <th>Bénéfice</th>
+                    <th>Taux</th>
+                    <th>Montant</th>
+                    <th>Statut</th>
+                    <th>Date vente</th>
+                    <th>Date paiement</th>
                     <th>Actions</th>
                   </tr>
                 </thead>
-                <tbody id="confirmed-clients-tbody">
-                  <!-- Clients confirmés will be loaded here -->
+                <tbody id="commissions-tbody">
+                  <!-- Commissions will be loaded here -->
                 </tbody>
               </table>
             </div>
@@ -199,129 +343,37 @@
     </div>
   </main>
 
-  <!-- Modal Détails Client -->
-  <div class="modal fade" id="clientDetailsModal" tabindex="-1" aria-labelledby="clientDetailsModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-centered">
+  <!-- Modal Confirmation Statut -->
+  <div class="modal fade" id="statusModal" tabindex="-1" aria-labelledby="statusModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title" id="clientDetailsModalLabel">
-            <i class="fas fa-user-circle me-2"></i>Détails du Client
+          <h5 class="modal-title" id="statusModalLabel">
+            <i class="fas fa-check-circle me-2"></i>Confirmer le paiement
           </h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
         </div>
         <div class="modal-body">
-          <div id="client-details-content">
-            <!-- Client details will be loaded here -->
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-            <i class="fas fa-times me-2"></i>Fermer
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Modal Création Vente -->
-  <div class="modal fade" id="saleModal" tabindex="-1" aria-labelledby="saleModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-centered">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" id="saleModalLabel">
-            <i class="fas fa-shopping-cart me-2"></i>Conclure une vente
-          </h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
-        </div>
-        <div class="modal-body">
-          <!-- Informations client et agent -->
-          <div class="row mb-4">
-            <div class="col-md-6">
-              <div class="card bg-light">
-                <div class="card-body p-3">
-                  <h6 class="text-primary mb-2">
-                    <i class="fas fa-user me-2"></i>Client
-                  </h6>
-                  <p class="mb-0" id="sale-client-name">Chargement...</p>
-                </div>
-              </div>
-            </div>
-            <div class="col-md-6">
-              <div class="card bg-light">
-                <div class="card-body p-3">
-                  <h6 class="text-success mb-2">
-                    <i class="fas fa-user-tie me-2"></i>Agent
-                  </h6>
-                  <p class="mb-0" id="sale-agent-name">Chargement...</p>
-                </div>
-              </div>
-            </div>
+          <div class="alert alert-info">
+            <h6 class="alert-heading mb-2">
+              <i class="fas fa-info-circle me-1"></i>Détails de la commission
+            </h6>
+            <p class="mb-1" id="status-commission-details">Chargement...</p>
           </div>
 
-          <!-- Formulaire de vente -->
-          <form id="create-sale-form">
-            <div class="row">
-              <div class="col-md-6">
-                <div class="form-group mb-3">
-                  <label for="sale-chiffre-affaires" class="form-label">
-                    <i class="fas fa-money-bill-wave me-1"></i>Chiffre d'affaires (FCFA) <span class="text-danger">*</span>
-                  </label>
-                  <input type="number" id="sale-chiffre-affaires" name="chiffreAffaires" class="form-control"
-                         placeholder="0" min="0" step="0.01" required>
-                </div>
-              </div>
-              <div class="col-md-6">
-                <div class="form-group mb-3">
-                  <label for="sale-montant-reel" class="form-label">
-                    <i class="fas fa-coins me-1"></i>Montant réel (FCFA) <span class="text-danger">*</span>
-                  </label>
-                  <input type="number" id="sale-montant-reel" name="montantReel" class="form-control"
-                         placeholder="0" min="0" step="0.01" required>
-                </div>
-              </div>
-            </div>
+          <div class="alert alert-warning">
+            <strong>Attention :</strong> Cette action marquera définitivement la commission comme payée.
+            Cette opération ne peut pas être annulée.
+          </div>
 
-            <div class="row">
-              <div class="col-md-6">
-                <div class="form-group mb-3">
-                  <label for="sale-taux-commission" class="form-label">
-                    <i class="fas fa-percentage me-1"></i>Taux de commission (%) <span class="text-danger">*</span>
-                  </label>
-                  <input type="number" id="sale-taux-commission" name="tauxCommission" class="form-control"
-                         placeholder="15" min="0" max="100" step="0.01" value="15" required>
-                </div>
-              </div>
-              <div class="col-md-6">
-                <div class="form-group mb-3">
-                  <label class="form-label">
-                    <i class="fas fa-chart-line me-1"></i>Bénéfice calculé
-                  </label>
-                  <p class="form-control-plaintext bg-light p-2 rounded" id="sale-benefice">0 FCFA</p>
-                </div>
-              </div>
-            </div>
-
-            <div class="row">
-              <div class="col-12">
-                <div class="alert alert-info">
-                  <h6 class="alert-heading mb-2">
-                    <i class="fas fa-gem me-1"></i>Commission calculée
-                  </h6>
-                  <p class="mb-0 fs-5 fw-bold text-primary" id="sale-commission">0 FCFA</p>
-                  <small class="text-muted">
-                    Calcul automatique : Bénéfice × Taux de commission
-                  </small>
-                </div>
-              </div>
-            </div>
-          </form>
+          <p class="mb-0">Êtes-vous sûr de vouloir marquer cette commission comme payée ?</p>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
             <i class="fas fa-times me-2"></i>Annuler
           </button>
-          <button type="submit" form="create-sale-form" class="btn btn-success">
-            <i class="fas fa-check me-2"></i>Confirmer la vente
+          <button type="button" class="btn btn-success" id="confirm-status-btn">
+            <i class="fas fa-check me-2"></i>Confirmer le paiement
           </button>
         </div>
       </div>
@@ -337,7 +389,7 @@
   <script src="../assets/argon/js/argon-dashboard.min.js?v=2.1.0"></script>
   <script type="module" src="../assets/js/firebase.js"></script>
   <script type="module" src="../assets/js/auth.js"></script>
-  <script type="module" src="../assets/js/clients-confirmes.js"></script>
+  <script type="module" src="../assets/js/commissions.js"></script>
   <script type="module">
     import { checkAuth } from '../assets/js/auth.js';
     checkAuth('admin');
