@@ -77,11 +77,33 @@ body.g-sidenav-pinned {
   transform: scale(1.1) rotate(5deg);
 }
 
-/* CSS correctif mobile */
+/* ===============================
+   SIDENAV MOBILE FIX
+================================ */
+
+#sidenav-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.45);
+  z-index: 999;
+  display: none;
+}
+
+#sidenav-overlay.active {
+  display: block;
+}
+
 @media (max-width: 991px) {
+
   #sidenav-main {
+    position: fixed !important;
+    left: 0;
+    top: 0;
+    height: 100vh;
     transform: translateX(-100%);
     transition: transform .3s ease;
+    z-index: 1000;
+    overflow-y: auto;
   }
 
   #sidenav-main.show {
@@ -90,24 +112,5 @@ body.g-sidenav-pinned {
 
   body.g-sidenav-pinned {
     overflow: hidden;
-  }
-
-  /* Overlay pour mobile */
-  #sidenav-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.5);
-    z-index: 1030;
-    opacity: 0;
-    visibility: hidden;
-    transition: all 0.3s ease;
-  }
-
-  #sidenav-overlay.active {
-    opacity: 1;
-    visibility: visible;
   }
 }
