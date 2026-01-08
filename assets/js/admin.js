@@ -901,7 +901,6 @@ class AdminInterface {
       // Initialiser tous les gestionnaires
       this.managers.dashboard = new DashboardManager();
       this.managers.users = new UserManager();
-      this.managers.userCreation = new UserCreationManager();
       this.managers.clients = new ClientsManager();
       this.managers.sales = new SalesManager();
 
@@ -909,7 +908,6 @@ class AdminInterface {
       await Promise.all([
         this.managers.dashboard.init(),
         this.managers.users.init(),
-        this.managers.userCreation.init(),
         this.managers.sales.init()
       ]);
 
@@ -936,4 +934,5 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // Export pour les tests
+export { AdminInterface, UIUtils };
 export { AdminInterface, UIUtils };
