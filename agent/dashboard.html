@@ -46,7 +46,15 @@
             <div class="icon icon-shape icon-sm border-radius-md text-center me-2 d-flex align-items-center justify-content-center">
               <i class="ni ni-single-02 text-dark text-sm opacity-10"></i>
             </div>
-            <span class="nav-link-text ms-1">Prospects</span>
+            <span class="nav-link-text ms-1">Mes Prospects</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link " href="remote-prospects.html">
+            <div class="icon icon-shape icon-sm border-radius-md text-center me-2 d-flex align-items-center justify-content-center">
+              <i class="ni ni-world text-dark text-sm opacity-10"></i>
+            </div>
+            <span class="nav-link-text ms-1">Prospects Distants</span>
           </a>
         </li>
         <li class="nav-item">
@@ -207,9 +215,47 @@
               <div class="row">
                 <div class="col-12">
                   <h5 class="font-weight-bolder">Bienvenue dans le tableau de bord agent</h5>
-                  <p class="mb-0">Gérez vos prospects et clients.</p>
+                  <p class="mb-4">Gérez vos prospects et clients.</p>
+
+                  <div class="d-flex gap-3 flex-wrap">
+                    <button class="btn btn-primary" onclick="window.location.href='prospects.html'">
+                      <i class="fas fa-plus me-2"></i>
+                      Ajouter un prospect
+                    </button>
+                    <button class="btn btn-success" id="share-form-btn">
+                      <i class="fas fa-share-alt me-2"></i>
+                      Partager le formulaire
+                    </button>
+                  </div>
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal pour partager le lien -->
+      <div class="modal fade" id="share-modal" tabindex="-1" aria-labelledby="shareModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="shareModalLabel">Partager le formulaire de prospection</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <p>Copiez ce lien pour le partager avec vos prospects :</p>
+              <div class="input-group">
+                <input type="text" class="form-control" id="share-link-input" readonly>
+                <button class="btn btn-outline-secondary" type="button" id="copy-link-btn">
+                  <i class="fas fa-copy"></i>
+                </button>
+              </div>
+              <small class="text-muted mt-2 d-block">
+                Ce lien permet à vos prospects de remplir directement le formulaire de prospection.
+              </small>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
             </div>
           </div>
         </div>
@@ -336,6 +382,55 @@
   <script type="module">
     import { checkAuth } from '../assets/js/auth.js';
     checkAuth('agent');
+  </script>
+
+  <script type="module">
+    import { auth } from '../assets/js/firebase.js';
+
+    // Gestion du partage du formulaire
+    document.addEventListener("DOMContentLoaded", () => {
+      const shareBtn = document.getElementById('share-form-btn');
+      const shareModal = new bootstrap.Modal(document.getElementById('share-modal'));
+      const shareLinkInput = document.getElementById('share-link-input');
+      const copyBtn = document.getElementById('copy-link-btn');
+
+      if (shareBtn) {
+        shareBtn.addEventListener('click', () => {
+          const user = auth.currentUser;
+          if (user) {
+            // Générer le lien public avec l'agentId
+            const baseUrl = window.location.protocol === 'file:' ? '../public/prospect-form.html' : '/public/prospect-form.html';
+            const shareUrl = `${window.location.origin}${baseUrl}?agentId=${user.uid}`;
+            shareLinkInput.value = shareUrl;
+            shareModal.show();
+          } else {
+            alert('Erreur : utilisateur non connecté');
+          }
+        });
+      }
+
+      if (copyBtn) {
+        copyBtn.addEventListener('click', async () => {
+          try {
+            await navigator.clipboard.writeText(shareLinkInput.value);
+            copyBtn.innerHTML = '<i class="fas fa-check"></i>';
+            copyBtn.classList.remove('btn-outline-secondary');
+            copyBtn.classList.add('btn-success');
+
+            setTimeout(() => {
+              copyBtn.innerHTML = '<i class="fas fa-copy"></i>';
+              copyBtn.classList.remove('btn-success');
+              copyBtn.classList.add('btn-outline-secondary');
+            }, 2000);
+          } catch (err) {
+            // Fallback pour les navigateurs qui ne supportent pas clipboard API
+            shareLinkInput.select();
+            document.execCommand('copy');
+            alert('Lien copié dans le presse-papiers !');
+          }
+        });
+      }
+    });
   </script>
 </body>
 

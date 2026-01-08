@@ -7,7 +7,7 @@
   <link rel="apple-touch-icon" sizes="76x76" href="../assets/argon/img/apple-icon.png">
   <link rel="icon" type="image/png" href="../assets/argon/img/favicon.png">
   <title>
-    Prospects - CRM Agent
+    Prospects Distants - CRM Agent
   </title>
   <!--     Fonts and icons     -->
   <link href="https://fonts.googleapis.com/css?family=Open+Sans:300,400,600,700" rel="stylesheet" />
@@ -42,11 +42,19 @@
           </a>
         </li>
         <li class="nav-item">
-          <a class="nav-link active" href="prospects.html">
+          <a class="nav-link " href="prospects.html">
             <div class="icon icon-shape icon-sm border-radius-md text-center me-2 d-flex align-items-center justify-content-center">
               <i class="ni ni-single-02 text-dark text-sm opacity-10"></i>
             </div>
-            <span class="nav-link-text ms-1">Prospects</span>
+            <span class="nav-link-text ms-1">Mes Prospects</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link active" href="remote-prospects.html">
+            <div class="icon icon-shape icon-sm border-radius-md text-center me-2 d-flex align-items-center justify-content-center">
+              <i class="ni ni-world text-dark text-sm opacity-10"></i>
+            </div>
+            <span class="nav-link-text ms-1">Prospects Distants</span>
           </a>
         </li>
         <li class="nav-item">
@@ -88,15 +96,15 @@
         <nav aria-label="breadcrumb">
           <ol class="breadcrumb bg-transparent mb-0 pb-0 pt-1 px-0 me-sm-6 me-5">
             <li class="breadcrumb-item text-sm"><a class="opacity-5 text-white" href="javascript:;">Pages</a></li>
-            <li class="breadcrumb-item text-sm text-white active" aria-current="page">Prospects</li>
+            <li class="breadcrumb-item text-sm text-white active" aria-current="page">Prospects Distants</li>
           </ol>
-          <h6 class="font-weight-bolder text-white mb-0">Gestion des Prospects</h6>
+          <h6 class="font-weight-bolder text-white mb-0">Validation des Prospects Distants</h6>
         </nav>
         <div class="collapse navbar-collapse mt-sm-0 mt-2 me-md-0 me-sm-4" id="navbar">
           <div class="ms-md-auto pe-md-3 d-flex align-items-center">
             <div class="input-group">
               <span class="input-group-text text-body"><i class="fas fa-search" aria-hidden="true"></i></span>
-              <input type="text" class="form-control" placeholder="Type here...">
+              <input type="text" class="form-control" placeholder="Rechercher...">
             </div>
           </div>
           <ul class="navbar-nav  justify-content-end">
@@ -203,6 +211,7 @@
       <div class="row">
         <div class="col-lg-12 mb-lg-0 mb-4">
           <div id="error-message" class="alert alert-danger" style="display: none;"></div>
+          <div id="success-message" class="alert alert-success" style="display: none;"></div>
         </div>
       </div>
       <div class="row">
@@ -210,97 +219,25 @@
           <div class="card">
             <div class="card-header pb-0 p-3">
               <div class="d-flex justify-content-between">
-                <h6 class="mb-2">Ajouter un nouveau prospect</h6>
-              </div>
-            </div>
-            <div class="card-body">
-              <form id="prospect-form">
-                <div class="row">
-                  <div class="col-md-6 mb-3">
-                    <label for="firstName" class="form-label">Prénom <span class="text-danger">*</span></label>
-                    <input type="text" id="firstName" name="firstName" class="form-control" required>
-                  </div>
-                  <div class="col-md-6 mb-3">
-                    <label for="lastName" class="form-label">Nom <span class="text-danger">*</span></label>
-                    <input type="text" id="lastName" name="lastName" class="form-control" required>
-                  </div>
-                </div>
-
-                <div class="mb-3">
-                  <label for="phone" class="form-label">Téléphone <span class="text-danger">*</span></label>
-                  <input type="tel" id="phone" name="phone" class="form-control" required>
-                </div>
-
-                <div class="mb-3">
-                  <label for="email" class="form-label">Email <span class="text-danger">*</span></label>
-                  <input type="email" id="email" name="email" class="form-control" required>
-                </div>
-
-                <div class="row">
-                  <div class="col-md-6 mb-3">
-                    <label for="country" class="form-label">Pays <span class="text-danger">*</span></label>
-                    <input type="text" id="country" name="country" class="form-control" required>
-                  </div>
-                  <div class="col-md-6 mb-3">
-                    <label for="city" class="form-label">Ville <span class="text-danger">*</span></label>
-                    <input type="text" id="city" name="city" class="form-control" required>
-                  </div>
-                </div>
-
-                <div class="mb-3">
-                  <label for="company" class="form-label">Entreprise <span class="text-danger">*</span></label>
-                  <input type="text" id="company" name="company" class="form-control" required>
-                </div>
-
-                <div class="mb-3">
-                  <label for="productInterest" class="form-label">Produit d'intérêt <span class="text-danger">*</span></label>
-                  <select id="productInterest" name="productInterest" class="form-control" required>
-                    <option value="">Sélectionnez un produit</option>
-                    <option value="logiciel">Logiciel</option>
-                    <option value="consulting">Consulting</option>
-                    <option value="formation">Formation</option>
-                    <option value="support">Support technique</option>
-                    <option value="autre">Autre</option>
-                  </select>
-                </div>
-
-                <div class="mb-4">
-                  <label for="estimatedQty" class="form-label">Quantité estimée</label>
-                  <input type="number" id="estimatedQty" name="estimatedQty" class="form-control" min="1">
-                </div>
-
-                <div class="text-center">
-                  <button type="submit" class="btn btn-primary btn-lg px-5">
-                    <i class="fas fa-save me-2"></i>
-                    Enregistrer le prospect
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="row mt-4">
-        <div class="col-lg-12 mb-lg-0 mb-4">
-          <div class="card ">
-            <div class="card-header pb-0 p-3">
-              <div class="d-flex justify-content-between">
-                <h6 class="mb-2">Liste des Prospects</h6>
+                <h6 class="mb-2">Prospects Distants en Attente</h6>
+                <span class="badge bg-info" id="prospects-count">0</span>
               </div>
             </div>
             <div class="table-responsive">
-              <table class="table align-items-center ">
+              <table class="table align-items-center">
                 <thead>
                   <tr>
                     <th>Nom</th>
-                    <th>Email</th>
                     <th>Téléphone</th>
-                    <th>Statut</th>
-                    <th>Action</th>
+                    <th>Email</th>
+                    <th>Produit</th>
+                    <th>Quantité</th>
+                    <th>Date</th>
+                    <th>Actions</th>
                   </tr>
                 </thead>
-                <tbody id="prospects-tbody">
-                  <!-- Prospects will be loaded here -->
+                <tbody id="remote-prospects-tbody">
+                  <!-- Prospects distants will be loaded here -->
                 </tbody>
               </table>
             </div>
@@ -341,24 +278,80 @@
       </footer>
     </div>
   </main>
-  <!-- Modal -->
-  <div class="modal fade" id="confirm-modal" tabindex="-1" aria-labelledby="confirmModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
+
+  <!-- Modal de vérification -->
+  <div class="modal fade" id="verify-modal" tabindex="-1" aria-labelledby="verifyModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title" id="confirmModalLabel">Confirmer la validation du client</h5>
+          <h5 class="modal-title" id="verifyModalLabel">Vérifier le Prospect Distant</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
-          Cette action est irréversible. Le prospect sera converti en client.
+          <form id="verify-form">
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label for="verify-firstName" class="form-label">Prénom <span class="text-danger">*</span></label>
+                <input type="text" id="verify-firstName" name="firstName" class="form-control" required>
+              </div>
+              <div class="col-md-6 mb-3">
+                <label for="verify-lastName" class="form-label">Nom <span class="text-danger">*</span></label>
+                <input type="text" id="verify-lastName" name="lastName" class="form-control" required>
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label for="verify-phone" class="form-label">Téléphone <span class="text-danger">*</span></label>
+              <input type="tel" id="verify-phone" name="phone" class="form-control" required>
+            </div>
+
+            <div class="mb-3">
+              <label for="verify-email" class="form-label">Email <span class="text-danger">*</span></label>
+              <input type="email" id="verify-email" name="email" class="form-control" required>
+            </div>
+
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label for="verify-country" class="form-label">Pays <span class="text-danger">*</span></label>
+                <input type="text" id="verify-country" name="country" class="form-control" required>
+              </div>
+              <div class="col-md-6 mb-3">
+                <label for="verify-city" class="form-label">Ville <span class="text-danger">*</span></label>
+                <input type="text" id="verify-city" name="city" class="form-control" required>
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label for="verify-company" class="form-label">Entreprise <span class="text-danger">*</span></label>
+              <input type="text" id="verify-company" name="company" class="form-control" required>
+            </div>
+
+            <div class="mb-3">
+              <label for="verify-productInterest" class="form-label">Produit d'intérêt <span class="text-danger">*</span></label>
+              <select id="verify-productInterest" name="productInterest" class="form-control" required>
+                <option value="">Sélectionnez un produit</option>
+                <option value="logiciel">Logiciel</option>
+                <option value="consulting">Consulting</option>
+                <option value="formation">Formation</option>
+                <option value="support">Support technique</option>
+                <option value="autre">Autre</option>
+              </select>
+            </div>
+
+            <div class="mb-3">
+              <label for="verify-estimatedQty" class="form-label">Quantité estimée</label>
+              <input type="number" id="verify-estimatedQty" name="estimatedQty" class="form-control" min="1">
+            </div>
+          </form>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" id="cancel-btn">Annuler</button>
-          <button type="button" class="btn btn-primary" id="confirm-btn">Confirmer</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+          <button type="button" class="btn btn-success" id="confirm-remote-btn">Confirmer le prospect</button>
         </div>
       </div>
     </div>
   </div>
+
   <div class="fixed-plugin">
     <a class="fixed-plugin-button text-dark position-fixed px-3 py-2">
       <i class="fa fa-cog py-2"> </i>
@@ -421,10 +414,10 @@
         <div class="w-100 text-center">
           <a class="github-button" href="https://github.com/creativetimofficial/argon-dashboard" data-icon="octicon-star" data-size="large" data-show-count="true" aria-label="Star creativetimofficial/argon-dashboard on GitHub">Star</a>
           <h6 class="mt-3">Thank you for sharing!</h6>
-          <a href="https://twitter.com/intent/tweet?text=Check%20Argon%20Dashboard%20made%20by%20%40CreativeTim%20%23webdesign%20%23dashboard%20%23bootstrap5&url=https%3A%2F%2Fwww.creative-tim.com%2Fproduct%2Fargon-dashboard" class="btn btn-dark mb-0 me-2" target="_blank">
+          <a href="https://twitter.com/intent/tweet?text=Check%20Argon%20Dashboard%20made%20by%20%40CreativeTim%20%23webdesign%20%23dashboard%20%23bootstrap%20%23bootstrap5&url=https%3A%2F%2Fwww.creative-tim.com%2Fproduct%2Fargon-dashboard" class="btn btn-dark mb-0 me-2" target="_blank">
             <i class="fab fa-twitter me-1" aria-hidden="true"></i> Tweet
           </a>
-          <a href="https://www.facebook.com/sharer/sharer.php?u=https://www.facebook.com/sharer/sharer.php?u=https://www.facebook.com/sharer/sharer.php?u=https://www.creative-tim.com/product/argon-dashboard" class="btn btn-dark mb-0 me-2" target="_blank">
+          <a href="https://www.facebook.com/sharer/sharer.php?u=https://www.facebook.com/sharer/sharer.php?u=https://www.creative-tim.com/product/argon-dashboard" class="btn btn-dark mb-0 me-2" target="_blank">
             <i class="fab fa-facebook-square me-1" aria-hidden="true"></i> Share
           </a>
         </div>
@@ -443,7 +436,7 @@
   <script src="../assets/argon/js/argon-dashboard.min.js?v=2.1.0"></script>
   <script type="module" src="../assets/js/firebase.js"></script>
   <script type="module" src="../assets/js/auth.js"></script>
-  <script type="module" src="../assets/js/agent.js"></script>
+  <script type="module" src="../assets/js/remote-prospects.js"></script>
   <script type="module">
     import { checkAuth } from '../assets/js/auth.js';
     checkAuth('agent');

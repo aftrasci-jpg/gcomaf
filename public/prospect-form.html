@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <link rel="apple-touch-icon" sizes="76x76" href="../assets/argon/img/logo.png">
+  <link rel="icon" type="image/png" href="../assets/argon/img/logo.png">
+  <title>
+    Formulaire de prospection - CRM
+  </title>
+  <!--     Fonts and icons     -->
+  <link href="https://fonts.googleapis.com/css?family=Open+Sans:300,400,600,700" rel="stylesheet" />
+  <!-- Nucleo Icons -->
+  <link href="https://demos.creative-tim.com/argon-dashboard-pro/assets/css/nucleo-icons.css" rel="stylesheet" />
+  <link href="https://demos.creative-tim.com/argon-dashboard-pro/assets/css/nucleo-svg.css" rel="stylesheet" />
+  <!-- Font Awesome Icons -->
+  <script src="https://kit.fontawesome.com/42d5adcbca.js" crossorigin="anonymous"></script>
+  <!-- CSS Files -->
+  <link id="pagestyle" href="../assets/argon/css/argon-dashboard.css?v=2.1.0" rel="stylesheet" />
+  <link href="../assets/argon/css/custom.css" rel="stylesheet" />
+  <!-- Custom styles for public form -->
+  <style>
+    body {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+    }
+    .form-card {
+      box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+      border: none;
+      border-radius: 15px;
+    }
+    .form-header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border-radius: 15px 15px 0 0;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container py-5">
+    <div class="row justify-content-center">
+      <div class="col-md-8 col-lg-6">
+        <div class="card form-card">
+          <div class="card-header form-header text-center py-4">
+            <h3 class="mb-0">
+              <i class="fas fa-handshake me-2"></i>
+              Formulaire de prospection
+            </h3>
+            <p class="mb-0 mt-2">Remplissez ce formulaire pour devenir prospect</p>
+          </div>
+
+          <div class="card-body p-4">
+            <form id="prospect-form">
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <label for="firstName" class="form-label">Prénom <span class="text-danger">*</span></label>
+                  <input type="text" id="firstName" name="firstName" class="form-control" required>
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label for="lastName" class="form-label">Nom <span class="text-danger">*</span></label>
+                  <input type="text" id="lastName" name="lastName" class="form-control" required>
+                </div>
+              </div>
+
+              <div class="mb-3">
+                <label for="phone" class="form-label">Téléphone <span class="text-danger">*</span></label>
+                <input type="tel" id="phone" name="phone" class="form-control" required>
+              </div>
+
+              <div class="mb-3">
+                <label for="email" class="form-label">Email <span class="text-danger">*</span></label>
+                <input type="email" id="email" name="email" class="form-control" required>
+              </div>
+
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <label for="country" class="form-label">Pays <span class="text-danger">*</span></label>
+                  <input type="text" id="country" name="country" class="form-control" required>
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label for="city" class="form-label">Ville <span class="text-danger">*</span></label>
+                  <input type="text" id="city" name="city" class="form-control" required>
+                </div>
+              </div>
+
+              <div class="mb-3">
+                <label for="company" class="form-label">Entreprise <span class="text-danger">*</span></label>
+                <input type="text" id="company" name="company" class="form-control" required>
+              </div>
+
+              <div class="mb-3">
+                <label for="productInterest" class="form-label">Produit d'intérêt <span class="text-danger">*</span></label>
+                <select id="productInterest" name="productInterest" class="form-control" required>
+                  <option value="">Sélectionnez un produit</option>
+                  <option value="logiciel">Logiciel</option>
+                  <option value="consulting">Consulting</option>
+                  <option value="formation">Formation</option>
+                  <option value="support">Support technique</option>
+                  <option value="autre">Autre</option>
+                </select>
+              </div>
+
+              <div class="mb-4">
+                <label for="estimatedQty" class="form-label">Quantité estimée</label>
+                <input type="number" id="estimatedQty" name="estimatedQty" class="form-control" min="1">
+              </div>
+
+              <div class="text-center">
+                <button type="submit" class="btn btn-primary btn-lg px-5">
+                  <i class="fas fa-paper-plane me-2"></i>
+                  Envoyer ma demande
+                </button>
+              </div>
+            </form>
+
+            <div id="success-message" class="alert alert-success mt-3" style="display: none;">
+              <i class="fas fa-check-circle me-2"></i>
+              Merci ! Votre demande a été envoyée avec succès. Nous vous contacterons bientôt.
+            </div>
+
+            <div id="error-message" class="alert alert-danger mt-3" style="display: none;">
+              <i class="fas fa-exclamation-triangle me-2"></i>
+              <span id="error-text"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Core JS Files -->
+  <script src="../assets/argon/js/core/popper.min.js"></script>
+  <script src="../assets/argon/js/core/bootstrap.min.js"></script>
+  <script type="module" src="../assets/js/firebase.js"></script>
+  <script type="module" src="../assets/js/public-prospect.js"></script>
+</body>
+
+</html>

@@ -5,110 +5,26 @@ import { checkAuth } from './auth.js';
 // Role protection
 checkAuth('agent');
 
-// Variables globales
-let formsCache = [];
-let selectedFormId = null;
-let selectedFormFields = [];
-
-// Charger et mettre en cache les formulaires de prospection
-async function loadAndCacheProspectionForms() {
-  try {
-    const formsRef = collection(db, 'prospection_forms');
-    const querySnapshot = await getDocs(formsRef);
-
-    formsCache = [];
-    const select = document.getElementById('form-select');
-    select.innerHTML = '<option value="">Sélectionnez un formulaire</option>';
-
-    querySnapshot.forEach((docSnap) => {
-      const formData = docSnap.data();
-      formsCache.push({
-        id: docSnap.id,
-        ...formData
-      });
-
-      const option = document.createElement('option');
-      option.value = docSnap.id;
-      option.textContent = formData.title;
-      select.appendChild(option);
-    });
-  } catch (error) {
-    console.error('Erreur lors du chargement des formulaires:', error);
-  }
-}
-
-// Générer le formulaire dynamique depuis le cache
-function generateDynamicForm(formId) {
-  const form = formsCache.find(f => f.id === formId);
-  if (!form) {
-    console.error('Formulaire non trouvé dans le cache');
-    return;
-  }
-
-  selectedFormFields = form.fields || [];
-  selectedFormId = formId;
-
-  // Empêcher la génération d’un formulaire vide
-  if (selectedFormFields.length === 0) {
-    alert('Ce formulaire ne contient aucun champ à remplir.');
-    document.getElementById('form-select').value = '';
-    return;
-  }
-
-  const container = document.getElementById('dynamic-form-container');
-  container.innerHTML = '';
-
-  selectedFormFields.forEach(field => {
-    const div = document.createElement('div');
-    div.className = 'form-group';
-
-    const label = document.createElement('label');
-    label.textContent = field.label;
-    label.setAttribute('for', field.name);
-
-    let input;
-    if (field.type === 'textarea') {
-      input = document.createElement('textarea');
-    } else {
-      input = document.createElement('input');
-      input.type = field.type || 'text';
-    }
-
-    input.id = field.name;
-    input.name = field.name;
-    if (field.required) input.required = true;
-
-    div.appendChild(label);
-    div.appendChild(input);
-    container.appendChild(div);
-  });
-
-  // Afficher le bouton de soumission
-  document.getElementById('submit-prospect-btn').style.display = 'block';
-}
-
-// Créer un prospect
-async function createProspect(formData) {
+// Créer un prospect local
+async function createLocalProspect(formData) {
   try {
     const user = JSON.parse(sessionStorage.getItem('user'));
 
     await addDoc(collection(db, 'prospects'), {
       agentId: user.uid,
-      formId: selectedFormId,
       data: formData,
       status: 'new',
       createdAt: serverTimestamp()
     });
 
-    // Réinitialiser le formulaire
-    document.getElementById('form-select').value = '';
-    document.getElementById('dynamic-form-container').innerHTML = '';
-    document.getElementById('submit-prospect-btn').style.display = 'none';
+    showSuccess('Prospect créé avec succès !');
+    resetProspectForm();
 
     // Recharger les prospects
     loadProspects();
   } catch (error) {
-    document.getElementById('error-message').textContent = error.message;
+    console.error('Erreur création prospect:', error);
+    showError('Erreur lors de la création du prospect: ' + error.message);
   }
 }
 
@@ -123,6 +39,8 @@ async function loadProspects() {
     const querySnapshot = await getDocs(q);
 
     const tbody = document.getElementById('prospects-tbody');
+    if (!tbody) return; // Pour éviter les erreurs sur les pages qui n'ont pas cette table
+
     tbody.innerHTML = '';
 
     querySnapshot.forEach((docSnap) => {
@@ -130,10 +48,10 @@ async function loadProspects() {
       const row = document.createElement('tr');
 
       row.innerHTML = `
-        <td>${prospect.data?.name || prospect.name || ''}</td>
+        <td>${prospect.data?.firstName || prospect.data?.name || prospect.name || ''} ${prospect.data?.lastName || ''}</td>
         <td>${prospect.data?.email || prospect.email || ''}</td>
         <td>${prospect.data?.phone || prospect.phone || ''}</td>
-        <td>${prospect.status === 'new' ? 'Nouveau' : 'Prospect'}</td>
+        <td>${prospect.status === 'new' ? 'Nouveau' : 'En cours'}</td>
         <td>
           <label class="switch">
             <input type="checkbox" data-id="${docSnap.id}">
@@ -155,7 +73,33 @@ async function loadProspects() {
     });
 
   } catch (error) {
-    document.getElementById('error-message').textContent = error.message;
+    console.error('Erreur chargement prospects:', error);
+    showError('Erreur lors du chargement des prospects: ' + error.message);
+  }
+}
+
+// Fonctions utilitaires pour les messages
+function showSuccess(message) {
+  const successEl = document.getElementById('success-message');
+  if (successEl) {
+    successEl.textContent = message;
+    successEl.style.display = 'block';
+    setTimeout(() => successEl.style.display = 'none', 3000);
+  }
+}
+
+function showError(message) {
+  const errorEl = document.getElementById('error-message');
+  if (errorEl) {
+    errorEl.textContent = message;
+    errorEl.style.display = 'block';
+  }
+}
+
+function resetProspectForm() {
+  const form = document.getElementById('prospect-form');
+  if (form) {
+    form.reset();
   }
 }
 
@@ -214,10 +158,43 @@ async function confirmConversion() {
 
 // Gestion des événements
 document.addEventListener('DOMContentLoaded', () => {
+  // Gestion du formulaire de création de prospect local
+  const prospectForm = document.getElementById('prospect-form');
+  if (prospectForm) {
+    prospectForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      // Collecter les données du formulaire
+      const formData = {
+        firstName: document.getElementById('firstName').value.trim(),
+        lastName: document.getElementById('lastName').value.trim(),
+        phone: document.getElementById('phone').value.trim(),
+        email: document.getElementById('email').value.trim(),
+        country: document.getElementById('country').value.trim(),
+        city: document.getElementById('city').value.trim(),
+        company: document.getElementById('company').value.trim(),
+        productInterest: document.getElementById('productInterest').value,
+        estimatedQty: document.getElementById('estimatedQty').value ? parseInt(document.getElementById('estimatedQty').value) : null
+      };
+
+      // Validation basique
+      if (!formData.firstName || !formData.lastName || !formData.email || !formData.phone) {
+        showError('Veuillez remplir tous les champs obligatoires.');
+        return;
+      }
+
+      if (!isValidEmail(formData.email)) {
+        showError('Veuillez saisir une adresse email valide.');
+        return;
+      }
+
+      await createLocalProspect(formData);
+    });
+  }
+
+  // Gestion du modal de confirmation prospect → client
   const cancelBtn = document.getElementById('cancel-btn');
   const confirmBtn = document.getElementById('confirm-btn');
-  const formSelect = document.getElementById('form-select');
-  const submitBtn = document.getElementById('submit-prospect-btn');
 
   if (cancelBtn) {
     cancelBtn.addEventListener('click', () => {
@@ -234,53 +211,12 @@ document.addEventListener('DOMContentLoaded', () => {
     confirmBtn.addEventListener('click', confirmConversion);
   }
 
-  if (formSelect) {
-    formSelect.addEventListener('change', (e) => {
-      const formId = e.target.value;
-      if (formId) {
-        generateDynamicForm(formId);
-      } else {
-        document.getElementById('dynamic-form-container').innerHTML = '';
-        document.getElementById('submit-prospect-btn').style.display = 'none';
-      }
-    });
-  }
-
-  if (submitBtn) {
-    submitBtn.addEventListener('click', (e) => {
-      e.preventDefault();
-      if (!selectedFormId) {
-        alert('Veuillez sélectionner un formulaire');
-        return;
-      }
-
-      // Validation JS des champs requis
-      let hasErrors = false;
-      selectedFormFields.forEach(field => {
-        if (field.required) {
-          const input = document.getElementById(field.name);
-          if (!input || !input.value.trim()) {
-            alert(`Le champ "${field.label}" est obligatoire.`);
-            hasErrors = true;
-            input?.focus();
-            return;
-          }
-        }
-      });
-      if (hasErrors) return;
-
-      const formData = {};
-      selectedFormFields.forEach(field => {
-        const input = document.getElementById(field.name);
-        if (input) {
-          formData[field.name] = input.value;
-        }
-      });
-      createProspect(formData);
-    });
-  }
-
   // Charger les données au chargement
-  loadAndCacheProspectionForms();
   loadProspects();
 });
+
+// Fonction utilitaire pour validation email
+function isValidEmail(email) {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
+}
