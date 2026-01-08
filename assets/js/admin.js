@@ -113,6 +113,8 @@ class UserManager {
   constructor() {
     this.usersTable = null;
     this.statsUpdated = false;
+    this.allUsers = []; // Stocker tous les utilisateurs pour la recherche
+    this.filteredUsers = [];
   }
 
   async init() {
@@ -120,6 +122,8 @@ class UserManager {
     if (this.usersTable) {
       await this.loadUsers();
       this.bindEvents();
+      this.initSearch();
+      this.initModal();
     }
   }
 
@@ -232,6 +236,178 @@ class UserManager {
         await this.sendCredentials(userId, email, firstName);
       }
     });
+  }
+
+  /**
+   * Initialise la fonctionnalité de recherche
+   */
+  initSearch() {
+    const searchInput = document.getElementById('user-search');
+    const clearButton = document.getElementById('clear-search');
+
+    if (!searchInput) return;
+
+    // Charger tous les utilisateurs pour la recherche
+    usersService.getAllUsers().then(users => {
+      this.allUsers = users;
+      this.filteredUsers = [...users];
+    }).catch(error => {
+      console.error('Erreur lors du chargement des utilisateurs pour la recherche:', error);
+    });
+
+    // Écouteur pour la recherche en temps réel
+    searchInput.addEventListener('input', (e) => {
+      const searchTerm = e.target.value.trim().toLowerCase();
+      this.filterUsers(searchTerm);
+    });
+
+    // Bouton pour effacer la recherche
+    if (clearButton) {
+      clearButton.addEventListener('click', () => {
+        searchInput.value = '';
+        this.filterUsers('');
+        searchInput.focus();
+      });
+    }
+  }
+
+  /**
+   * Filtre les utilisateurs selon le terme de recherche
+   */
+  filterUsers(searchTerm) {
+    if (!searchTerm) {
+      this.filteredUsers = [...this.allUsers];
+    } else {
+      this.filteredUsers = this.allUsers.filter(user =>
+        user.firstName.toLowerCase().includes(searchTerm) ||
+        user.lastName.toLowerCase().includes(searchTerm) ||
+        user.email.toLowerCase().includes(searchTerm) ||
+        user.role.toLowerCase().includes(searchTerm)
+      );
+    }
+
+    this.renderFilteredUsers();
+  }
+
+  /**
+   * Affiche les utilisateurs filtrés
+   */
+  renderFilteredUsers() {
+    if (!this.usersTable) return;
+
+    this.usersTable.innerHTML = '';
+
+    this.filteredUsers.forEach(user => {
+      const row = this.createUserRow(user);
+      this.usersTable.appendChild(row);
+    });
+  }
+
+  /**
+   * Initialise la gestion de la modal de création d'utilisateur
+   */
+  initModal() {
+    const modalForm = document.getElementById('create-user-modal-form');
+
+    if (modalForm) {
+      modalForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        await this.handleModalSubmit(e);
+      });
+    }
+  }
+
+  /**
+   * Gère la soumission du formulaire modal
+   */
+  async handleModalSubmit(e) {
+    const formData = new FormData(e.target);
+    const userData = {
+      firstName: formData.get('firstName'),
+      lastName: formData.get('lastName'),
+      email: formData.get('email'),
+      role: formData.get('role')
+    };
+
+    // Masquer les messages précédents
+    this.hideModalMessages();
+
+    try {
+      UIUtils.showLoading('Création de l\'utilisateur...');
+
+      const result = await usersService.createUser(
+        userData.firstName,
+        userData.lastName,
+        userData.email,
+        userData.role
+      );
+
+      UIUtils.hideLoading();
+
+      // Afficher les identifiants générés dans la modal
+      const successMessage = `
+        Utilisateur créé avec succès !
+
+        📧 Email : ${result.email}
+        🔑 Mot de passe temporaire : ${result.temporaryPassword}
+
+        ⚠️ L'utilisateur devra changer son mot de passe à sa première connexion.
+      `;
+
+      this.showModalSuccess(successMessage);
+
+      // Fermer la modal après 3 secondes
+      setTimeout(() => {
+        const modal = bootstrap.Modal.getInstance(document.getElementById('createUserModal'));
+        if (modal) {
+          modal.hide();
+        }
+        this.hideModalMessages();
+      }, 3000);
+
+      // Réinitialiser le formulaire
+      e.target.reset();
+
+      // Recharger la liste des utilisateurs
+      await this.loadUsers();
+
+    } catch (error) {
+      UIUtils.hideLoading();
+      this.showModalError('Erreur lors de la création: ' + error.message);
+    }
+  }
+
+  /**
+   * Affiche un message de succès dans la modal
+   */
+  showModalSuccess(message) {
+    const successEl = document.getElementById('modal-success-message');
+    if (successEl) {
+      successEl.textContent = message;
+      successEl.style.display = 'block';
+    }
+  }
+
+  /**
+   * Affiche un message d'erreur dans la modal
+   */
+  showModalError(message) {
+    const errorEl = document.getElementById('modal-error-message');
+    if (errorEl) {
+      errorEl.textContent = message;
+      errorEl.style.display = 'block';
+    }
+  }
+
+  /**
+   * Masque tous les messages de la modal
+   */
+  hideModalMessages() {
+    const successEl = document.getElementById('modal-success-message');
+    const errorEl = document.getElementById('modal-error-message');
+
+    if (successEl) successEl.style.display = 'none';
+    if (errorEl) errorEl.style.display = 'none';
   }
 
   async toggleUserStatus(userId, currentStatus) {
