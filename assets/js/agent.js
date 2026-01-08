@@ -90,10 +90,10 @@ function showSuccess(message) {
 
 function showError(message) {
   const errorEl = document.getElementById('error-message');
-  if (errorEl) {
-    errorEl.textContent = message;
-    errorEl.style.display = 'block';
-  }
+  if (!errorEl) return;
+
+  errorEl.textContent = message;
+  errorEl.style.display = 'block';
 }
 
 function resetProspectForm() {
@@ -106,6 +106,8 @@ function resetProspectForm() {
 // Ouvrir le modal de confirmation
 function openConfirmModal(prospectId) {
   const modal = document.getElementById('confirm-modal');
+  if (!modal) return;
+
   modal.style.display = 'block';
   modal.dataset.prospectId = prospectId;
 }
@@ -113,6 +115,8 @@ function openConfirmModal(prospectId) {
 // Fermer le modal
 function closeModal() {
   const modal = document.getElementById('confirm-modal');
+  if (!modal) return;
+
   modal.style.display = 'none';
   delete modal.dataset.prospectId;
 }
@@ -135,7 +139,6 @@ async function confirmConversion() {
 
     // Créer le client avec les données du prospect
     await addDoc(collection(db, 'clients'), {
-      formId: prospect.formId,
       data: prospect.data,
       agentId: prospect.agentId,
       confirmedAt: serverTimestamp(),
@@ -144,6 +147,13 @@ async function confirmConversion() {
 
     // Supprimer le prospect
     await deleteDoc(doc(db, 'prospects', prospectId));
+
+    // Désactiver le toggle après conversion
+    const checkbox = document.querySelector(`input[data-id="${prospectId}"]`);
+    if (checkbox) checkbox.disabled = true;
+
+    // Message de succès
+    showSuccess('Prospect converti en client avec succès !');
 
     // Fermer le modal
     closeModal();
