@@ -76,3 +76,19 @@ body.g-sidenav-pinned {
 .card:hover .icon-shape {
   transform: scale(1.1) rotate(5deg);
 }
+
+/* CSS correctif mobile */
+@media (max-width: 991px) {
+  #sidenav-main {
+    transform: translateX(-100%);
+    transition: transform .3s ease;
+  }
+
+  #sidenav-main.show {
+    transform: translateX(0);
+  }
+
+  body.g-sidenav-pinned {
+    overflow: hidden;
+  }
+}
