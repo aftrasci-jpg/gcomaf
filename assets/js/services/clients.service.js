@@ -27,9 +27,10 @@ export class ClientsService {
         usersMap[doc.id] = `${user.firstName} ${user.lastName}`;
       });
 
-      // Récupérer les clients
+      // Récupérer les clients envoyés à l'admin
       const clientsQuery = query(
         collection(db, this.collectionName),
+        where('sentToAdmin', '==', true),
         orderBy('confirmedAt', 'desc')
       );
       const clientsSnapshot = await getDocs(clientsQuery);
@@ -114,7 +115,9 @@ export class ClientsService {
       if (criteria.searchTerm) {
         const term = criteria.searchTerm.toLowerCase();
         clients = clients.filter(c =>
-          (c.data?.name || '').toLowerCase().includes(term) ||
+          (
+            `${c.data?.firstName || ''} ${c.data?.lastName || ''}`
+          ).toLowerCase().includes(term) ||
           (c.data?.email || '').toLowerCase().includes(term) ||
           c.agentName.toLowerCase().includes(term)
         );
@@ -229,7 +232,7 @@ export class ClientsService {
       ];
 
       const csvData = clients.map(client => [
-        client.data?.name || '',
+        `${client.data?.firstName || ''} ${client.data?.lastName || ''}`.trim(),
         client.data?.email || '',
         client.data?.phone || '',
         client.agentName,
@@ -261,22 +264,29 @@ export class ClientsService {
    * Valide les données d'un client
    */
   validateClientData(clientData) {
-    if (!clientData?.name?.trim()) {
+    if (!clientData?.firstName?.trim()) {
+      throw new Error('Le prénom du client est obligatoire');
+    }
+    if (!clientData?.lastName?.trim()) {
       throw new Error('Le nom du client est obligatoire');
     }
     if (!clientData?.email?.trim()) {
-      throw new Error('L\'email du client est obligatoire');
+      throw new Error("L'email du client est obligatoire");
     }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(clientData.email)) {
-      throw new Error('Format d\'email invalide pour le client');
+      throw new Error("Format d'email invalide pour le client");
     }
 
     return {
-      name: clientData.name.trim(),
+      firstName: clientData.firstName.trim(),
+      lastName: clientData.lastName.trim(),
       email: clientData.email.trim().toLowerCase(),
       phone: clientData.phone?.trim() || '',
-      address: clientData.address?.trim() || '',
-      notes: clientData.notes?.trim() || ''
+      company: clientData.company?.trim() || '',
+      country: clientData.country?.trim() || '',
+      city: clientData.city?.trim() || '',
+      productInterest: clientData.productInterest?.trim() || '',
+      estimatedQty: clientData.estimatedQty || null
     };
   }
 }
