@@ -13,6 +13,58 @@ import { clientsService } from './services/clients.service.js';
 import { salesService } from './services/sales.service.js';
 import { dashboardService } from './services/dashboard.service.js';
 
+/**
+ * Gestion du code d'accès agent dans le dashboard admin
+ */
+function setupAccessCodeGenerator() {
+  const generateBtn = document.getElementById('generate-access-code-btn');
+  const displayDiv = document.getElementById('access-code-display');
+  const codeInput = document.getElementById('generated-code');
+  const linkInput = document.getElementById('generated-link');
+  const copyCodeBtn = document.getElementById('copy-code-btn');
+  const copyLinkBtn = document.getElementById('copy-link-btn');
+
+  if (!generateBtn) return;
+
+  generateBtn.addEventListener('click', async () => {
+    try {
+      UIUtils.showLoading('Génération du code d\'accès...');
+
+      const result = await authAdminService.getOrCreateAgentAccessCode();
+
+      // Afficher le résultat
+      codeInput.value = result.code;
+      linkInput.value = result.link;
+      displayDiv.classList.remove('d-none');
+
+      UIUtils.hideLoading();
+      UIUtils.showSuccess('Code d\'accès généré avec succès !');
+
+    } catch (error) {
+      UIUtils.hideLoading();
+      UIUtils.showError('Erreur lors de la génération: ' + error.message);
+    }
+  });
+
+  // Gestionnaire pour copier le code
+  if (copyCodeBtn && codeInput) {
+    copyCodeBtn.addEventListener('click', () => {
+      codeInput.select();
+      document.execCommand('copy');
+      UIUtils.showSuccess('Code copié dans le presse-papiers !');
+    });
+  }
+
+  // Gestionnaire pour copier le lien
+  if (copyLinkBtn && linkInput) {
+    copyLinkBtn.addEventListener('click', () => {
+      linkInput.select();
+      document.execCommand('copy');
+      UIUtils.showSuccess('Lien copié dans le presse-papiers !');
+    });
+  }
+}
+
 // Protection d'accès admin
 checkAuth('admin');
 
@@ -929,6 +981,9 @@ class AdminInterface {
 document.addEventListener('DOMContentLoaded', () => {
   // Initialiser l'interface admin
   window.adminInterface = new AdminInterface();
+
+  // Initialiser le générateur de code d'accès
+  setupAccessCodeGenerator();
 
   // Les gestionnaires sont exposés globalement dans leur méthode init() respective
 });
