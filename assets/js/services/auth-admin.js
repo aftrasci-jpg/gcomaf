@@ -169,10 +169,8 @@ export class AuthAdminService {
    * Construit l'objet retourné au dashboard
    */
   buildAccessCodePayload(code, expiresAt) {
-    const baseUrl =
-      window.location.protocol === 'file:'
-        ? 'register.html'
-        : '/register.html';
+    // Pour GitHub Pages, utiliser l'URL complète
+    const baseUrl = window.location.origin + '/gcomaf/register.html';
 
     const link = `${baseUrl}?code=${encodeURIComponent(
       code
