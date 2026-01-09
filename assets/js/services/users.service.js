@@ -1,5 +1,5 @@
 import { db, auth } from '../firebase.js';
-import { collection, addDoc, getDocs, doc, updateDoc, deleteDoc, serverTimestamp, query, where } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js';
+import { collection, addDoc, getDocs, doc, updateDoc, deleteDoc, setDoc, serverTimestamp, query, where } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js';
 import { createUserWithEmailAndPassword } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js';
 import { generatePassword } from '../utils.js';
 import { authAdminService } from './auth-admin.js';
@@ -247,7 +247,7 @@ export class UsersService {
         lastModified: serverTimestamp()
       };
 
-      await addDoc(collection(db, this.collectionName), userData);
+      await setDoc(doc(db, this.collectionName, uid), userData);
 
       return userData;
     } catch (error) {
