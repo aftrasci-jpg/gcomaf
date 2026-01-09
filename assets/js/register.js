@@ -21,6 +21,8 @@ import { usersService } from './services/users.service.js';
  * Valide le code d'accès et crée le compte utilisateur
  */
 
+console.log('Register script loaded');
+
 // Validation du code d'accès
 async function validateAccessCode(code) {
   if (!code || code.trim().length === 0) {
@@ -52,19 +54,27 @@ async function validateAccessCode(code) {
 }
 
 // Soumission du formulaire d'inscription
-document.getElementById('register-form').addEventListener('submit', async (e) => {
-  e.preventDefault();
+console.log('Setting up form listener');
+const registerForm = document.getElementById('register-form');
+console.log('Form element:', registerForm);
 
-  const formData = {
-    lastName: document.getElementById('lastName').value.trim(),
-    firstName: document.getElementById('firstName').value.trim(),
-    email: document.getElementById('email').value.trim().toLowerCase(),
-    password: document.getElementById('password').value,
-    accessCode: document.getElementById('accessCode').value.trim()
-  };
+if (registerForm) {
+  registerForm.addEventListener('submit', async (e) => {
+    console.log('Form submit event triggered');
+    e.preventDefault();
 
-  // Masquer les messages précédents
-  hideMessages();
+    const formData = {
+      lastName: document.getElementById('lastName').value.trim(),
+      firstName: document.getElementById('firstName').value.trim(),
+      email: document.getElementById('email').value.trim().toLowerCase(),
+      password: document.getElementById('password').value,
+      accessCode: document.getElementById('accessCode').value.trim()
+    };
+
+    console.log('Form data:', formData);
+
+    // Masquer les messages précédents
+    hideMessages();
 
   try {
     // Validation des champs
@@ -123,7 +133,10 @@ document.getElementById('register-form').addEventListener('submit', async (e) =>
     console.error('Erreur inscription:', error);
     showError(error.message);
   }
-});
+  });
+} else {
+  console.error('Register form not found');
+}
 
 // Fonctions utilitaires
 function showError(message) {
