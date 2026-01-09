@@ -77,6 +77,8 @@ if (registerForm) {
     hideMessages();
 
   try {
+    console.log('Starting validation...');
+
     // Validation des champs
     if (!formData.firstName || !formData.lastName) {
       throw new Error('Le prénom et le nom sont obligatoires');
@@ -94,11 +96,17 @@ if (registerForm) {
       throw new Error('Le mot de passe doit contenir au moins 6 caractères');
     }
 
+    console.log('Field validation passed, validating access code...');
+
     // Validation du code d'accès
     await validateAccessCode(formData.accessCode);
+    console.log('Access code validated successfully');
+
+    console.log('Checking if email exists...');
 
     // Vérifier que l'email n'existe pas déjà
     await authAdminService.checkEmailExists(formData.email);
+    console.log('Email check passed');
 
     // Créer le compte Firebase Auth
     const userCredential = await createUserWithEmailAndPassword(
