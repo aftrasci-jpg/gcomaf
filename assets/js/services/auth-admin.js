@@ -6,7 +6,8 @@ import {
   setDoc,
   query,
   where,
-  getDocs
+  getDocs,
+  limit
 } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js';
 
 /**
@@ -263,7 +264,8 @@ export class AuthAdminService {
     const usersRef = collection(db, 'users');
     const q = query(
       usersRef,
-      where('email', '==', email.toLowerCase())
+      where('email', '==', email.toLowerCase()),
+      limit(1)
     );
     const snap = await getDocs(q);
 

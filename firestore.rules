@@ -35,6 +35,12 @@ service cloud.firestore {
     match /users/{userId} {
       allow read, write: if isAdmin() && isActive();
       allow read: if isAuthenticated() && isActive() && request.auth.uid == userId;
+
+      // Permettre la vérification d'email lors de l'inscription (sans auth)
+      allow read: if !isAuthenticated() && request.query.limit == 1;
+
+      // Permettre la création du document utilisateur lors de l'inscription
+      allow create: if isAuthenticated() && request.auth.uid == request.resource.data.uid;
     }
 
     /* =========================
