@@ -1,20 +1,16 @@
 name = "crm-gcomaf"
+pages_build_output_dir = "."
 compatibility_date = "2024-01-01"
 
-[build]
-command = "echo 'Static site - no build needed'"
-cwd = "."
-
-[build.upload]
-format = "service-worker"
-
-[[build.upload.rules]]
-type = "ESModule"
-globs = ["**/*.js"]
-
-[[build.upload.rules]]
-type = "CommonJS"
-globs = ["**/*.js"]
+# Variables d'environnement Firebase
+# À configurer dans Cloudflare Pages Dashboard
+[vars]
+FIREBASE_API_KEY = "your-firebase-api-key"
+FIREBASE_AUTH_DOMAIN = "your-project.firebaseapp.com"
+FIREBASE_PROJECT_ID = "your-project-id"
+FIREBASE_STORAGE_BUCKET = "your-project.appspot.com"
+FIREBASE_MESSAGING_SENDER_ID = "123456789"
+FIREBASE_APP_ID = "1:123456789:web:abcdef123456"
 
 # Headers de sécurité
 [[headers]]
