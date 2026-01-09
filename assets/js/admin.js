@@ -719,16 +719,38 @@ function initStableSidenav() {
 
   if (!sidenav || !openBtn) return;
 
+  // Créer l'overlay si nécessaire
+  let overlay = document.getElementById("sidenav-overlay");
+  if (!overlay) {
+    overlay = document.createElement("div");
+    overlay.id = "sidenav-overlay";
+    document.body.appendChild(overlay);
+  }
+
   function openSidenav() {
-    body.classList.add("g-sidenav-pinned");
-    sidenav.classList.add("show");
-    body.style.overflow = "hidden";
+    // Pour mobile (< 1200px)
+    if (window.innerWidth < 1200) {
+      body.classList.add("g-sidenav-show");
+      body.classList.remove("g-sidenav-hidden");
+      overlay.classList.add("active");
+    } else {
+      // Pour desktop (>= 1200px)
+      body.classList.add("g-sidenav-pinned");
+      sidenav.classList.add("show");
+    }
   }
 
   function closeSidenav() {
-    body.classList.remove("g-sidenav-pinned");
-    sidenav.classList.remove("show");
-    body.style.overflow = "";
+    // Pour mobile (< 1200px)
+    if (window.innerWidth < 1200) {
+      body.classList.remove("g-sidenav-show");
+      body.classList.add("g-sidenav-hidden");
+      overlay.classList.remove("active");
+    } else {
+      // Pour desktop (>= 1200px)
+      body.classList.remove("g-sidenav-pinned");
+      sidenav.classList.remove("show");
+    }
   }
 
   // Ouvrir le menu
@@ -742,23 +764,50 @@ function initStableSidenav() {
     closeBtn.addEventListener("click", closeSidenav);
   }
 
-  // Fermer après clic sur un lien (mobile)
+  // Fermer après clic sur un lien (mobile uniquement)
   sidenav.querySelectorAll("a.nav-link").forEach(link => {
     link.addEventListener("click", () => {
-      if (window.innerWidth < 1200) closeSidenav();
+      if (window.innerWidth < 1200) {
+        setTimeout(closeSidenav, 100); // Petit délai pour la navigation
+      }
     });
   });
 
-  // Fermer si clic en dehors du menu
+  // Fermer si clic sur overlay (mobile uniquement)
+  overlay.addEventListener("click", () => {
+    if (window.innerWidth < 1200) {
+      closeSidenav();
+    }
+  });
+
+  // Fermer si clic en dehors du menu (mobile uniquement)
   document.addEventListener("click", (e) => {
     if (
-      body.classList.contains("g-sidenav-pinned") &&
+      window.innerWidth < 1200 &&
+      body.classList.contains("g-sidenav-show") &&
       !sidenav.contains(e.target) &&
       !openBtn.contains(e.target)
     ) {
       closeSidenav();
     }
   });
+
+  // Gestion du redimensionnement de fenêtre
+  window.addEventListener("resize", () => {
+    // Fermer automatiquement en mode mobile si ouvert en desktop
+    if (window.innerWidth >= 1200 && body.classList.contains("g-sidenav-show")) {
+      closeSidenav();
+    }
+  });
+
+  // État initial : fermé sur mobile, ouvert sur desktop
+  if (window.innerWidth >= 1200) {
+    body.classList.add("g-sidenav-pinned");
+    sidenav.classList.add("show");
+  } else {
+    body.classList.add("g-sidenav-hidden");
+    body.classList.remove("g-sidenav-show");
+  }
 }
 
 /**

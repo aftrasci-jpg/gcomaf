@@ -116,6 +116,102 @@ body.g-sidenav-pinned {
   overflow: auto !important;
 }
 
+/* Navigation fixe et stable pour desktop */
+@media (min-width: 1200px) {
+  #sidenav-main {
+    position: fixed !important;
+    top: 0;
+    left: 0;
+    height: 100vh !important;
+    z-index: 1030;
+    transform: translateX(0) !important;
+    transition: none !important;
+  }
+
+  body.g-sidenav-pinned #sidenav-main {
+    transform: translateX(0) !important;
+  }
+
+  .main-content {
+    margin-left: 250px !important; /* Largeur standard de la sidenav */
+    transition: margin-left 0.3s ease;
+  }
+}
+
+/* Navigation mobile avec overlay */
+@media (max-width: 1199px) {
+  #sidenav-main {
+    position: fixed !important;
+    top: 0;
+    left: 0;
+    height: 100vh !important;
+    width: 250px !important; /* Largeur fixe */
+    z-index: 1040;
+    transform: translateX(-100%) !important;
+    transition: transform 0.3s ease !important;
+    box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+  }
+
+  body.g-sidenav-show #sidenav-main {
+    transform: translateX(0) !important;
+  }
+
+  body.g-sidenav-hidden #sidenav-main {
+    transform: translateX(-100%) !important;
+  }
+
+  /* Overlay pour mobile */
+  #sidenav-overlay {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    background: rgba(0,0,0,0.5) !important;
+    z-index: 1035 !important;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+  }
+
+  #sidenav-overlay.active {
+    opacity: 1 !important;
+    visibility: visible !important;
+  }
+
+  /* Empêcher le scroll du body quand menu ouvert */
+  body.g-sidenav-show {
+    overflow: hidden !important;
+  }
+}
+
+/* Styles communs pour tous les breakpoints */
+.sidenav {
+  background: white !important;
+  border-right: 1px solid rgba(0,0,0,0.1) !important;
+  box-shadow: 2px 0 10px rgba(0,0,0,0.05) !important;
+}
+
+/* Bouton hamburger toujours visible */
+#iconNavbarSidenav {
+  display: block !important;
+  cursor: pointer !important;
+}
+
+/* Cacher le bouton hamburger sur desktop quand menu est pinned */
+@media (min-width: 1200px) {
+  body.g-sidenav-pinned #iconNavbarSidenav {
+    display: none !important;
+  }
+}
+
+/* Montrer le bouton hamburger sur mobile */
+@media (max-width: 1199px) {
+  #iconNavbarSidenav {
+    display: block !important;
+  }
+}
+
 /* Dashboard cards hover animations */
 .card {
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
