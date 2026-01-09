@@ -45,6 +45,10 @@ service cloud.firestore {
       // ➕ Création du profil à l’inscription
       allow create: if isAuthenticated()
                     && request.auth.uid == userId;
+
+      // ➕ Création alternative (par sécurité)
+      allow create: if isAuthenticated()
+                    && request.resource.data.uid == request.auth.uid;
     }
 
     /* =========================
