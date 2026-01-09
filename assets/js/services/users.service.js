@@ -229,6 +229,32 @@ export class UsersService {
       throw new Error('Erreur lors de la recherche');
     }
   }
+
+  /**
+   * Crée un utilisateur dans Firestore seulement (pour l'inscription)
+   */
+  async createUserInFirestore(uid, firstName, lastName, email, role) {
+    try {
+      const userData = {
+        uid,
+        firstName,
+        lastName,
+        email,
+        role,
+        status: 'active',
+        passwordTemporary: false, // Mot de passe défini par l'utilisateur
+        createdAt: serverTimestamp(),
+        lastModified: serverTimestamp()
+      };
+
+      await addDoc(collection(db, this.collectionName), userData);
+
+      return userData;
+    } catch (error) {
+      console.error('Erreur lors de la création de l\'utilisateur dans Firestore:', error);
+      throw new Error('Impossible de créer le compte utilisateur');
+    }
+  }
 }
 
 // Instance globale

@@ -13,6 +13,7 @@ import {
   updateProfile
 } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js';
 import { auth } from './firebase.js';
+import { authAdminService } from './services/auth-admin.js';
 import { usersService } from './services/users.service.js';
 
 /**
@@ -87,7 +88,7 @@ document.getElementById('register-form').addEventListener('submit', async (e) =>
     await validateAccessCode(formData.accessCode);
 
     // Vérifier que l'email n'existe pas déjà
-    await usersService.checkEmailExists(formData.email);
+    await authAdminService.checkEmailExists(formData.email);
 
     // Créer le compte Firebase Auth
     const userCredential = await createUserWithEmailAndPassword(
