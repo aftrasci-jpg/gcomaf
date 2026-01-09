@@ -162,7 +162,7 @@ class UIUtils {
 }
 
 /**
- * Gestionnaire des utilisateurs
+ * Gestionnaire des utilisateurs (LECTURE UNIQUEMENT)
  */
 class UserManager {
   constructor() {
@@ -178,7 +178,6 @@ class UserManager {
       await this.loadUsers();
       this.bindEvents();
       this.initSearch();
-      this.initModal();
     }
 
     // 🔥 IMPORTANT
@@ -361,113 +360,6 @@ class UserManager {
     });
   }
 
-  /**
-   * Initialise la gestion de la modal de création d'utilisateur
-   */
-  initModal() {
-    const modalForm = document.getElementById('create-user-modal-form');
-
-    if (modalForm) {
-      modalForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        await this.handleModalSubmit(e);
-      });
-    }
-  }
-
-  /**
-   * Gère la soumission du formulaire modal
-   */
-  async handleModalSubmit(e) {
-    const formData = new FormData(e.target);
-    const userData = {
-      firstName: formData.get('firstName'),
-      lastName: formData.get('lastName'),
-      email: formData.get('email'),
-      role: formData.get('role')
-    };
-
-    // Masquer les messages précédents
-    this.hideModalMessages();
-
-    try {
-      UIUtils.showLoading('Création de l\'utilisateur...');
-
-      const result = await usersService.createUser(
-        userData.firstName,
-        userData.lastName,
-        userData.email,
-        userData.role
-      );
-
-      UIUtils.hideLoading();
-
-      // Afficher les identifiants générés dans la modal
-      const successMessage = `
-        Utilisateur créé avec succès !
-
-        📧 Email : ${result.email}
-        🔑 Mot de passe temporaire : ${result.temporaryPassword}
-
-        ⚠️ L'utilisateur devra changer son mot de passe à sa première connexion.
-      `;
-
-      this.showModalSuccess(successMessage);
-
-      // Fermer la modal après 3 secondes
-      setTimeout(() => {
-        const modal = bootstrap.Modal.getInstance(document.getElementById('createUserModal'));
-        if (modal) {
-          modal.hide();
-        }
-        this.hideModalMessages();
-      }, 3000);
-
-      // Réinitialiser le formulaire
-      e.target.reset();
-
-      // Recharger la liste des utilisateurs
-      await this.loadUsers();
-
-    } catch (error) {
-      UIUtils.hideLoading();
-      this.showModalError('Erreur lors de la création: ' + error.message);
-    }
-  }
-
-  /**
-   * Affiche un message de succès dans la modal
-   */
-  showModalSuccess(message) {
-    const successEl = document.getElementById('modal-success-message');
-    if (successEl) {
-      successEl.textContent = message;
-      successEl.style.display = 'block';
-    }
-  }
-
-  /**
-   * Affiche un message d'erreur dans la modal
-   */
-  showModalError(message) {
-    const errorEl = document.getElementById('modal-error-message');
-    if (errorEl) {
-      errorEl.textContent = message;
-      errorEl.style.display = 'block';
-    }
-  }
-
-  /**
-   * Masque tous les messages de la modal
-   */
-  hideModalMessages() {
-    const successEl = document.getElementById('modal-success-message');
-    const errorEl = document.getElementById('modal-error-message');
-
-    if (successEl) successEl.style.display = 'none';
-    if (errorEl) errorEl.style.display = 'none';
-  }
-
   async toggleUserStatus(userId, currentStatus) {
     const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
     const action = newStatus === 'active' ? 'activer' : 'désactiver';
@@ -495,72 +387,6 @@ class UserManager {
   async sendCredentials(userId, email, firstName) {
     // TODO: Implémenter l'envoi d'email
     UIUtils.showError('Fonctionnalité d\'envoi d\'email à implémenter');
-  }
-}
-
-/**
- * Gestionnaire de création d'utilisateurs
- */
-class UserCreationManager {
-  constructor() {
-    this.form = null;
-  }
-
-  async init() {
-    this.form = document.getElementById('create-user-form');
-    if (this.form) {
-      this.form.addEventListener('submit', (e) => this.handleSubmit(e));
-    }
-  }
-
-  async handleSubmit(e) {
-    e.preventDefault();
-
-    const formData = new FormData(this.form);
-    const userData = {
-      firstName: formData.get('firstName'),
-      lastName: formData.get('lastName'),
-      email: formData.get('email'),
-      role: formData.get('role')
-    };
-
-    try {
-      UIUtils.showLoading('Création de l\'utilisateur...');
-
-      const result = await usersService.createUser(
-        userData.firstName,
-        userData.lastName,
-        userData.email,
-        userData.role
-      );
-
-      UIUtils.hideLoading();
-
-      // Afficher les identifiants générés
-      const credentialsMessage = `
-        Utilisateur créé avec succès !
-
-        📧 Email : ${result.email}
-        🔑 Mot de passe temporaire : ${result.temporaryPassword}
-
-        ⚠️ L'utilisateur devra changer son mot de passe à la première connexion.
-      `;
-
-      alert(credentialsMessage);
-      UIUtils.showSuccess('Utilisateur créé avec succès');
-
-      // Réinitialiser le formulaire
-      this.form.reset();
-
-      // Recharger la liste des utilisateurs
-      if (window.userManager) {
-        await window.userManager.loadUsers();
-      }
-
-    } catch (error) {
-      UIUtils.hideLoading();
-      UIUtils.showError('Erreur lors de la création: ' + error.message);
-    }
   }
 }
 
@@ -601,8 +427,6 @@ class DashboardManager {
     }
   }
 }
-
-
 
 /**
  * Gestionnaire des ventes
@@ -689,6 +513,7 @@ class SalesManager {
     const commissionsSnapshot = await getDocs(collection(db, 'commissions'));
     const commissions = [];
 
+// Récupération des commissions
     commissionsSnapshot.forEach(doc => {
       commissions.push({
         id: doc.id,
@@ -937,13 +762,6 @@ function initStableSidenav() {
 }
 
 /**
- * Garde-fou contre la gestion des formulaires - DÉFINITIVEMENT SUPPRIMÉE
- */
-function forbidFormManagement() {
-  throw new Error("Gestion des formulaires désactivée définitivement.");
-}
-
-/**
  * Gestionnaire principal de l'interface admin
  */
 class AdminInterface {
@@ -977,8 +795,6 @@ class AdminInterface {
       UIUtils.showError('Erreur lors de l\'initialisation de l\'interface');
     }
   }
-
-
 }
 
 // Démarrage de l'application
@@ -988,10 +804,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Initialiser le visualiseur de code d'accès
   setupAccessCodeViewer();
-
-  // Les gestionnaires sont exposés globalement dans leur méthode init() respective
 });
 
 // Export pour les tests
-export { AdminInterface, UIUtils };
 export { AdminInterface, UIUtils };

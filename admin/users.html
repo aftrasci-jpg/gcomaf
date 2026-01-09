@@ -222,12 +222,7 @@
           <div class="card">
             <div class="card-body">
               <div class="row align-items-center">
-                <div class="col-md-6">
-                  <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createUserModal">
-                    <i class="fas fa-user-plus me-2"></i>Ajouter un utilisateur
-                  </button>
-                </div>
-                <div class="col-md-6">
+                <div class="col-md-12">
                   <div class="input-group">
                     <span class="input-group-text"><i class="fas fa-search"></i></span>
                     <input type="text" id="user-search" class="form-control" placeholder="Rechercher par nom, prénom ou email...">
@@ -294,68 +289,7 @@
   <script type="module" src="../assets/js/firebase.js"></script>
   <script type="module" src="../assets/js/auth.js"></script>
   <script type="module" src="../assets/js/admin.js"></script>
-  <!-- Modal Création Utilisateur -->
-  <div class="modal fade" id="createUserModal" tabindex="-1" aria-labelledby="createUserModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" id="createUserModalLabel">
-            <i class="fas fa-user-plus me-2"></i>Ajouter un nouvel utilisateur
-          </h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
-        </div>
-        <div class="modal-body">
-          <div id="modal-success-message" class="alert alert-success" style="display: none;" role="alert" aria-live="polite"></div>
-          <div id="modal-error-message" class="alert alert-danger" style="display: none;" role="alert" aria-live="polite"></div>
 
-          <form id="create-user-modal-form">
-            <div class="row">
-              <div class="col-md-6">
-                <div class="form-group mb-3">
-                  <label for="modal-firstName" class="form-label">Prénom <span class="text-danger">*</span></label>
-                  <input type="text" id="modal-firstName" name="firstName" class="form-control" placeholder="Entrez le prénom" required autocomplete="given-name">
-                </div>
-              </div>
-              <div class="col-md-6">
-                <div class="form-group mb-3">
-                  <label for="modal-lastName" class="form-label">Nom <span class="text-danger">*</span></label>
-                  <input type="text" id="modal-lastName" name="lastName" class="form-control" placeholder="Entrez le nom" required autocomplete="family-name">
-                </div>
-              </div>
-            </div>
-            <div class="form-group mb-3">
-              <label for="modal-email" class="form-label">Email <span class="text-danger">*</span></label>
-              <input type="email" id="modal-email" name="email" class="form-control" placeholder="email@exemple.com" required autocomplete="email">
-              <small class="form-text text-muted">L'email doit être unique et valide</small>
-            </div>
-            <div class="form-group mb-3">
-              <label for="modal-role" class="form-label">Rôle <span class="text-danger">*</span></label>
-              <select id="modal-role" name="role" class="form-control" required>
-                <option value="">Sélectionner un rôle</option>
-                <option value="agent">Agent Commercial</option>
-                <option value="supervisor">Superviseur</option>
-                <option value="admin">Administrateur</option>
-              </select>
-              <small class="form-text text-muted">Le rôle détermine les permissions de l'utilisateur</small>
-            </div>
-            <div class="alert alert-info">
-              <i class="fas fa-info-circle me-2"></i>
-              <strong>Information :</strong> Un mot de passe sécurisé sera généré automatiquement.
-              L'utilisateur devra le changer à sa première connexion.
-            </div>
-          </form>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-            <i class="fas fa-times me-2"></i>Annuler
-          </button>
-          <button type="submit" form="create-user-modal-form" class="btn btn-primary" id="modal-create-user-btn">
-            <i class="fas fa-user-plus me-2"></i>Créer l'utilisateur
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
 
   <script type="module">
     import { checkAuth } from '../assets/js/auth.js';
