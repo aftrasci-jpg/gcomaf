@@ -30,8 +30,7 @@ export class ClientsService {
       // Récupérer les clients envoyés à l'admin
       const clientsQuery = query(
         collection(db, this.collectionName),
-        where('sentToAdmin', '==', true),
-        orderBy('confirmedAt', 'desc')
+        where('sentToAdmin', '==', true)
       );
       const clientsSnapshot = await getDocs(clientsQuery);
 

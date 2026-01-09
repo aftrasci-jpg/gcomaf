@@ -106,6 +106,13 @@ service cloud.firestore {
     }
 
     /* =========================
+       SYSTEM CONFIG (ADMIN ONLY)
+    ========================= */
+    match /system_config/{configId} {
+      allow read, write: if isAdmin() && isActive();
+    }
+
+    /* =========================
        FORMS - GESTION SUPPRIMÉE DÉFINITIVEMENT
     ========================= */
     match /forms/{formId} {
