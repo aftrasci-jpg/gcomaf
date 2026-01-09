@@ -775,7 +775,6 @@ class AdminInterface {
       // Initialiser tous les gestionnaires
       this.managers.dashboard = new DashboardManager();
       this.managers.users = new UserManager();
-      this.managers.clients = new ClientsManager();
       this.managers.sales = new SalesManager();
 
       // Initialiser chaque gestionnaire
