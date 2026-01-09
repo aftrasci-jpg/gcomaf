@@ -162,7 +162,17 @@ export async function logout() {
 // Enregistrement du Service Worker pour PWA
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js')
+    // Déterminer le chemin du Service Worker selon l'environnement
+    let swPath = '/sw.js';
+    if (window.location.hostname.includes('github.io')) {
+      // Pour GitHub Pages, ajuster le chemin selon le repository
+      const repoName = window.location.pathname.split('/')[1];
+      if (repoName) {
+        swPath = `/${repoName}/sw.js`;
+      }
+    }
+
+    navigator.serviceWorker.register(swPath)
       .then((registration) => {
         console.log('Service Worker enregistré avec succès:', registration.scope);
 
