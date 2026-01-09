@@ -15,52 +15,56 @@ import { dashboardService } from './services/dashboard.service.js';
 
 /**
  * Gestion du code d'accès agent dans le dashboard admin
+ * Le code est généré automatiquement par le service si nécessaire.
+ * L'admin ne fait que le récupérer et le partager.
  */
-function setupAccessCodeGenerator() {
-  const generateBtn = document.getElementById('generate-access-code-btn');
+function setupAccessCodeViewer() {
+  const btn = document.getElementById('generate-access-code-btn');
   const displayDiv = document.getElementById('access-code-display');
   const codeInput = document.getElementById('generated-code');
   const linkInput = document.getElementById('generated-link');
   const copyCodeBtn = document.getElementById('copy-code-btn');
   const copyLinkBtn = document.getElementById('copy-link-btn');
 
-  if (!generateBtn) return;
+  if (!btn) return;
 
-  generateBtn.addEventListener('click', async () => {
+  btn.addEventListener('click', async () => {
     try {
-      UIUtils.showLoading('Génération du code d\'accès...');
+      UIUtils.showLoading("Récupération du code d'accès...");
 
+      // 🔐 Le service décide automatiquement s'il faut générer un nouveau code
       const result = await authAdminService.getOrCreateAgentAccessCode();
 
-      // Afficher le résultat
       codeInput.value = result.code;
       linkInput.value = result.link;
       displayDiv.classList.remove('d-none');
 
       UIUtils.hideLoading();
-      UIUtils.showSuccess('Code d\'accès généré avec succès !');
+      UIUtils.showSuccess("Code d'accès prêt à être utilisé");
 
     } catch (error) {
       UIUtils.hideLoading();
-      UIUtils.showError('Erreur lors de la génération: ' + error.message);
+      UIUtils.showError(
+        "Erreur lors de la récupération du code : " + error.message
+      );
     }
   });
 
-  // Gestionnaire pour copier le code
+  // 📋 Copier le code
   if (copyCodeBtn && codeInput) {
     copyCodeBtn.addEventListener('click', () => {
       codeInput.select();
       document.execCommand('copy');
-      UIUtils.showSuccess('Code copié dans le presse-papiers !');
+      UIUtils.showSuccess("Code copié dans le presse-papiers");
     });
   }
 
-  // Gestionnaire pour copier le lien
+  // 🔗 Copier le lien d'inscription
   if (copyLinkBtn && linkInput) {
     copyLinkBtn.addEventListener('click', () => {
       linkInput.select();
       document.execCommand('copy');
-      UIUtils.showSuccess('Lien copié dans le presse-papiers !');
+      UIUtils.showSuccess("Lien d'inscription copié");
     });
   }
 }
@@ -982,8 +986,8 @@ document.addEventListener('DOMContentLoaded', () => {
   // Initialiser l'interface admin
   window.adminInterface = new AdminInterface();
 
-  // Initialiser le générateur de code d'accès
-  setupAccessCodeGenerator();
+  // Initialiser le visualiseur de code d'accès
+  setupAccessCodeViewer();
 
   // Les gestionnaires sont exposés globalement dans leur méthode init() respective
 });
