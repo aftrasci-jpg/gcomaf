@@ -204,6 +204,9 @@ class UserManager {
       // Mettre à jour les statistiques
       this.updateStats(stats);
 
+      // Alimenter le système de filtrage
+      onUsersLoadedForFiltering(users);
+
       UIUtils.hideLoading();
 
     } catch (error) {
@@ -853,6 +856,189 @@ document.addEventListener('DOMContentLoaded', () => {
   // Initialiser le visualiseur de code d'accès
   setupAccessCodeViewer();
 });
+
+// Variables globales pour le filtrage des utilisateurs
+let allUsers = [];       // Tous les utilisateurs chargés
+let filteredUsers = []; // Résultat du filtre courant
+let currentFilter = "all";
+
+/* ----------------------------------
+   Gestion des cartes cliquables pour filtrer les utilisateurs
+----------------------------------- */
+document.addEventListener("DOMContentLoaded", () => {
+
+  const cards = document.querySelectorAll(".user-filter-card");
+
+  cards.forEach(card => {
+    card.addEventListener("click", () => {
+
+      const filter = card.dataset.filter;
+      currentFilter = filter;
+
+      // UI active
+      cards.forEach(c => c.classList.remove("active"));
+      card.classList.add("active");
+
+      applyUserFilters();
+    });
+  });
+
+});
+
+/* ----------------------------------
+   Chargement initial des utilisateurs pour le filtrage
+----------------------------------- */
+function onUsersLoadedForFiltering(users) {
+  allUsers = users;
+  filteredUsers = [...allUsers];
+  renderFilteredUsers(filteredUsers);
+  updateUserStats(allUsers);
+}
+
+/* ----------------------------------
+   Application des filtres utilisateurs
+----------------------------------- */
+function applyUserFilters() {
+
+  let result = [...allUsers];
+
+  switch (currentFilter) {
+    case "active":
+      result = result.filter(u => u.status === "active");
+      break;
+
+    case "agent":
+      result = result.filter(u => u.role === "agent");
+      break;
+
+    case "supervisor":
+      result = result.filter(u => u.role === "supervisor");
+      break;
+
+    case "all":
+    default:
+      break;
+  }
+
+  // 🔍 Appliquer aussi la recherche texte
+  const searchInput = document.getElementById("user-search");
+  const term = searchInput.value.toLowerCase();
+
+  if (term) {
+    result = result.filter(u =>
+      u.firstName.toLowerCase().includes(term) ||
+      u.lastName.toLowerCase().includes(term) ||
+      u.email.toLowerCase().includes(term)
+    );
+  }
+
+  filteredUsers = result;
+  renderFilteredUsers(filteredUsers);
+}
+
+/* ----------------------------------
+   Recherche en temps réel (mise à jour pour compatibilité avec filtres)
+----------------------------------- */
+document.addEventListener("DOMContentLoaded", () => {
+  const searchInput = document.getElementById("user-search");
+  const clearButton = document.getElementById("clear-search");
+
+  if (searchInput) {
+    searchInput.addEventListener("input", () => {
+      applyUserFilters();
+    });
+  }
+
+  if (clearButton) {
+    clearButton.addEventListener("click", () => {
+      if (searchInput) searchInput.value = "";
+      applyUserFilters();
+    });
+  }
+});
+
+/* ----------------------------------
+   Rendu du tableau des utilisateurs filtrés
+----------------------------------- */
+function renderFilteredUsers(users) {
+
+  const tbody = document.getElementById("users-tbody");
+  tbody.innerHTML = "";
+
+  if (!users.length) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="6" class="text-center text-muted">
+          Aucun utilisateur trouvé
+        </td>
+      </tr>`;
+    return;
+  }
+
+  users.forEach(u => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${u.firstName}</td>
+      <td>${u.lastName}</td>
+      <td>${u.email}</td>
+      <td><span class="badge bg-${getRoleColor(u.role)}">${formatRole(u.role)}</span></td>
+      <td><span class="badge bg-${u.status === 'active' ? 'success' : 'secondary'}">${formatStatus(u.status)}</span></td>
+      <td>
+        <div class="btn-group btn-group-sm">
+          <button class="btn btn-outline-primary btn-toggle" data-id="${u.id}" data-status="${u.status}" title="${u.status === 'active' ? 'Désactiver' : 'Activer'}">
+            <i class="fas fa-${u.status === 'active' ? 'ban' : 'check'}"></i>
+          </button>
+          <button class="btn btn-outline-info btn-send-credentials" data-id="${u.id}" data-email="${u.email}" data-firstname="${u.firstName}" title="Envoyer les identifiants">
+            <i class="fas fa-envelope"></i>
+          </button>
+        </div>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+/* ----------------------------------
+   Mise à jour des stats utilisateurs
+----------------------------------- */
+function updateUserStats(users) {
+
+  document.getElementById("total-users").textContent = users.length;
+
+  document.getElementById("active-users").textContent =
+    users.filter(u => u.status === "active").length;
+
+  document.getElementById("agent-count").textContent =
+    users.filter(u => u.role === "agent").length;
+
+  document.getElementById("supervisor-count").textContent =
+    users.filter(u => u.role === "supervisor").length;
+}
+
+/* ----------------------------------
+   Fonctions utilitaires pour le rendu
+----------------------------------- */
+function getRoleColor(role) {
+  const colors = {
+    admin: 'danger',
+    supervisor: 'warning',
+    agent: 'info'
+  };
+  return colors[role] || 'secondary';
+}
+
+function formatRole(role) {
+  const labels = {
+    admin: 'Administrateur',
+    supervisor: 'Superviseur',
+    agent: 'Agent'
+  };
+  return labels[role] || role;
+}
+
+function formatStatus(status) {
+  return status === 'active' ? 'Actif' : 'Inactif';
+}
 
 // Export pour les tests
 export { AdminInterface, UIUtils };

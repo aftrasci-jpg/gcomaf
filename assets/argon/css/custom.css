@@ -265,3 +265,18 @@ body.g-sidenav-pinned {
 body.menu-open {
   overflow: hidden;
 }
+
+/* User filter cards - clickable and interactive */
+.user-filter-card {
+  cursor: pointer;
+  transition: transform .15s ease, box-shadow .15s ease;
+}
+
+.user-filter-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(0,0,0,.15);
+}
+
+.user-filter-card.active {
+  outline: 2px solid #5e72e4;
+}
