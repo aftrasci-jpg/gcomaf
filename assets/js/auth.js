@@ -37,7 +37,7 @@ async function checkUserInFirestore(email) {
   // Vérifier si l'utilisateur doit changer son mot de passe
   if (userData.passwordTemporary === true) {
     // Rediriger vers la page de changement de mot de passe
-    const changePasswordUrl = window.location.protocol === 'file:' ? 'change-password.html' : '/change-password.html';
+    const changePasswordUrl = window.location.origin + '/gcomaf/change-password.html';
     window.location.href = changePasswordUrl;
     return; // Ne pas continuer avec la redirection normale
   }
@@ -67,23 +67,22 @@ function redirectByRole(role) {
   } else {
     throw new Error('Rôle inconnu');
   }
-  if (window.location.protocol === 'file:') {
-    window.location.href = path;
-  } else {
-    window.location.href = '/' + path;
-  }
+
+  // Pour GitHub Pages, utiliser le chemin relatif au repository
+  const baseUrl = window.location.origin + '/gcomaf/';
+  window.location.href = baseUrl + path;
 }
 
 // Garde d'authentification
 function checkAuth(requiredRole) {
   const user = JSON.parse(sessionStorage.getItem('user'));
   if (!user) {
-    const loginUrl = window.location.protocol === 'file:' ? '../index.html' : '/index.html';
+    const loginUrl = window.location.origin + '/gcomaf/index.html';
     window.location.href = loginUrl;
     return;
   }
   if (user.role !== requiredRole) {
-    const loginUrl = window.location.protocol === 'file:' ? '../index.html' : '/index.html';
+    const loginUrl = window.location.origin + '/gcomaf/index.html';
     window.location.href = loginUrl;
     return;
   }
@@ -151,8 +150,9 @@ export async function logout() {
     localStorage.clear();
     sessionStorage.clear();
 
-    // Redirection vers login
-    window.location.href = "/index.html";
+    // Redirection vers login avec URL complète pour GitHub Pages
+    const loginUrl = window.location.origin + '/gcomaf/index.html';
+    window.location.href = loginUrl;
   } catch (error) {
     console.error("Erreur déconnexion :", error);
     alert("Erreur lors de la déconnexion.");
