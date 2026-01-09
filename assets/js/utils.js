@@ -36,3 +36,18 @@ export function parseCFA(cfaString) {
 
   return parseFloat(normalized) || 0;
 }
+
+/**
+ * Generate a secure random password
+ * @param {number} length - Length of the password (default: 10)
+ * @returns {string} Generated password
+ */
+export function generatePassword(length = 10) {
+  const chars =
+    'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%';
+  let password = '';
+  for (let i = 0; i < length; i++) {
+    password += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return password;
+}
