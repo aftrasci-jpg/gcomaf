@@ -11,19 +11,19 @@ document.addEventListener("DOMContentLoaded", () => {
   // Fonctions
   // -----------------------------
   function openMenu() {
-    sidenav.classList.add("show");
-    document.body.classList.add("menu-open");
+    document.body.classList.add("g-sidenav-show");
+    document.body.classList.remove("g-sidenav-hidden");
     overlay.classList.add("show");
   }
 
   function closeMenu() {
-    sidenav.classList.remove("show");
-    document.body.classList.remove("menu-open");
+    document.body.classList.remove("g-sidenav-show");
+    document.body.classList.add("g-sidenav-hidden");
     overlay.classList.remove("show");
   }
 
   function toggleMenu() {
-    if (sidenav.classList.contains("show")) {
+    if (document.body.classList.contains("g-sidenav-show")) {
       closeMenu();
     } else {
       openMenu();
@@ -94,5 +94,18 @@ document.addEventListener("DOMContentLoaded", () => {
       return originalReplace.call(window.location, url);
     };
   })();
+
+  // Bloquer redirection logo
+  const navbarBrand = document.querySelector('.navbar-brand');
+  if (navbarBrand) {
+    navbarBrand.addEventListener('click', (e) => {
+      const forbidden = ["demos.creative-tim.com","argon-dashboard"];
+      const isForbidden = forbidden.some(f => navbarBrand.href && navbarBrand.href.includes(f));
+      if (isForbidden) {
+        e.preventDefault();
+        console.warn("Redirection logo bloquée :", navbarBrand.href);
+      }
+    });
+  }
 
 });
