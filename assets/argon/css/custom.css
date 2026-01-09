@@ -174,7 +174,7 @@ body.g-sidenav-pinned {
     transition: all 0.3s ease;
   }
 
-  #sidenav-overlay.active {
+  #sidenav-overlay.show {
     opacity: 1 !important;
     visibility: visible !important;
   }
@@ -247,4 +247,21 @@ body.g-sidenav-pinned {
 .dashboard-card:focus {
   outline: 2px solid #5e72e4;
   outline-offset: 2px;
+}
+
+/* New overlay styles for complete menu management */
+.sidenav-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  z-index: 1030;
+  display: none;
+}
+
+.sidenav-overlay.show {
+  display: block;
+}
+
+body.menu-open {
+  overflow: hidden;
 }

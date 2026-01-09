@@ -1,0 +1,98 @@
+document.addEventListener("DOMContentLoaded", () => {
+
+  const sidenav = document.getElementById("sidenav-main");
+  const toggleBtn = document.getElementById("iconNavbarSidenav");
+  const closeBtn = document.getElementById("iconSidenav");
+  const overlay = document.getElementById("sidenav-overlay");
+
+  if (!sidenav) return;
+
+  // -----------------------------
+  // Fonctions
+  // -----------------------------
+  function openMenu() {
+    sidenav.classList.add("show");
+    document.body.classList.add("menu-open");
+    overlay.classList.add("show");
+  }
+
+  function closeMenu() {
+    sidenav.classList.remove("show");
+    document.body.classList.remove("menu-open");
+    overlay.classList.remove("show");
+  }
+
+  function toggleMenu() {
+    if (sidenav.classList.contains("show")) {
+      closeMenu();
+    } else {
+      openMenu();
+    }
+  }
+
+  // -----------------------------
+  // Boutons
+  // -----------------------------
+  if (toggleBtn) {
+    toggleBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      toggleMenu();
+    });
+  }
+
+  if (closeBtn) {
+    closeBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      closeMenu();
+    });
+  }
+
+  // -----------------------------
+  // Clic sur un lien du menu
+  // -----------------------------
+  const menuLinks = sidenav.querySelectorAll(".nav-link");
+  menuLinks.forEach(link => {
+    link.addEventListener("click", () => {
+      closeMenu();
+    });
+  });
+
+  // -----------------------------
+  // Clic sur l’overlay
+  // -----------------------------
+  if (overlay) {
+    overlay.addEventListener("click", () => {
+      closeMenu();
+    });
+  }
+
+  // -----------------------------
+  // Sécurité : bloquer redirections Argon démo
+  // -----------------------------
+  (function blockDemoRedirect() {
+    const forbidden = ["demos.creative-tim.com","argon-dashboard"];
+    const originalAssign = window.location.assign;
+    const originalReplace = window.location.replace;
+
+    function isForbidden(url) {
+      return forbidden.some(f => url && url.includes(f));
+    }
+
+    window.location.assign = function (url) {
+      if (isForbidden(url)) {
+        console.warn("Redirection Argon bloquée :", url);
+        return;
+      }
+      return originalAssign.call(window.location, url);
+    };
+
+    window.location.replace = function (url) {
+      if (isForbidden(url)) {
+        console.warn("Redirection Argon bloquée :", url);
+        return;
+      }
+      return originalReplace.call(window.location, url);
+    };
+  })();
+
+});
