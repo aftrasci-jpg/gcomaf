@@ -27,26 +27,25 @@ export class ClientsService {
         usersMap[doc.id] = `${user.firstName} ${user.lastName}`;
       });
 
-      // Récupérer les clients envoyés à l'admin
-      const clientsQuery = query(
-        collection(db, this.collectionName),
-        where('sentToAdmin', '==', true)
-      );
-      const clientsSnapshot = await getDocs(clientsQuery);
+      // Récupérer tous les clients (simplification pour éviter les index composites)
+      const clientsSnapshot = await getDocs(collection(db, this.collectionName));
 
+      // Filtrer côté client ceux envoyés à l'admin
       const clients = [];
       clientsSnapshot.forEach((docSnap) => {
         const clientData = docSnap.data();
-        const agentName = usersMap[clientData.agentId] || 'Agent inconnu';
+        if (clientData.sentToAdmin === true) {
+          // Récupérer le nom de l'agent
+          const agentName = usersMap[clientData.agentId] || 'Agent inconnu';
 
-        clients.push({
-          id: docSnap.id,
-          ...clientData,
-          agentName,
-          // Convertir les timestamps Firestore
-          confirmedAt: clientData.confirmedAt?.toDate?.() || new Date(clientData.confirmedAt),
-          createdAt: clientData.createdAt?.toDate?.() || new Date(clientData.createdAt)
-        });
+          clients.push({
+            id: docSnap.id,
+            ...clientData,
+            agentName,
+            confirmedAt: clientData.confirmedAt?.toDate?.() || new Date(clientData.confirmedAt),
+            createdAt: clientData.createdAt?.toDate?.() || new Date(clientData.createdAt)
+          });
+        }
       });
 
       return clients;
