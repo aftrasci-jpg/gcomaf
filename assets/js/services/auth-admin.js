@@ -90,6 +90,17 @@ export class AuthAdminService {
    * Retourne un code valide ou en génère un automatiquement
    */
   async getOrCreateAgentAccessCode() {
+
+    // 🔐 S'assurer que l'utilisateur courant est bien chargé
+    if (!this.currentUser) {
+      try {
+        const userData = JSON.parse(sessionStorage.getItem('user'));
+        if (userData) this.currentUser = userData;
+      } catch (e) {
+        console.warn("Impossible de lire l'utilisateur en session");
+      }
+    }
+
     await this.checkPermission('generate_access_code');
 
     const ref = doc(
@@ -103,10 +114,12 @@ export class AuthAdminService {
 
     if (snap.exists()) {
       const data = snap.data();
-      const expiresAt =
-        data.expiresAt?.toDate?.() ||
-        new Date(data.expiresAt);
 
+      const expiresAt = data.expiresAt?.toDate
+        ? data.expiresAt.toDate()
+        : new Date(data.expiresAt);
+
+      // ✅ Code encore valide → on le renvoie
       if (now < expiresAt) {
         return this.buildAccessCodePayload(
           data.code,
@@ -169,12 +182,25 @@ export class AuthAdminService {
    * Construit l'objet retourné au dashboard
    */
   buildAccessCodePayload(code, expiresAt) {
-    // Pour GitHub Pages, utiliser l'URL complète
-    const baseUrl = window.location.origin + '/gcomaf/register.html';
 
-    const link = `${baseUrl}?code=${encodeURIComponent(
-      code
-    )}`;
+    let baseUrl;
+
+    // 🔹 GitHub Pages
+    if (window.location.hostname.includes('github.io')) {
+      baseUrl = `${window.location.origin}/gcomaf/register.html`;
+    }
+
+    // 🔹 Local file://
+    else if (window.location.protocol === 'file:') {
+      baseUrl = 'register.html';
+    }
+
+    // 🔹 Serveur classique / Vercel / Netlify
+    else {
+      baseUrl = `${window.location.origin}/register.html`;
+    }
+
+    const link = `${baseUrl}?code=${encodeURIComponent(code)}`;
 
     return {
       code,
