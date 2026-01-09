@@ -159,5 +159,69 @@ export async function logout() {
   }
 }
 
+// Enregistrement du Service Worker pour PWA
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js')
+      .then((registration) => {
+        console.log('Service Worker enregistré avec succès:', registration.scope);
+
+        // Vérifier les mises à jour
+        registration.addEventListener('updatefound', () => {
+          const newWorker = registration.installing;
+          if (newWorker) {
+            newWorker.addEventListener('statechange', () => {
+              if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                // Nouvelle version disponible
+                if (confirm('Une nouvelle version de l\'app est disponible. Voulez-vous l\'installer ?')) {
+                  newWorker.postMessage({ type: 'SKIP_WAITING' });
+                  window.location.reload();
+                }
+              }
+            });
+          }
+        });
+      })
+      .catch((error) => {
+        console.error('Erreur lors de l\'enregistrement du Service Worker:', error);
+      });
+  });
+}
+
+// Écouteur pour l'événement beforeinstallprompt (installation PWA)
+let deferredPrompt;
+window.addEventListener('beforeinstallprompt', (e) => {
+  // Empêcher l'affichage automatique du prompt
+  e.preventDefault();
+  deferredPrompt = e;
+
+  // Afficher le bouton d'installation
+  const installBtn = document.getElementById('install-pwa-btn');
+  if (installBtn) {
+    installBtn.style.display = 'inline-block';
+    installBtn.addEventListener('click', () => {
+      // Afficher le prompt d'installation
+      deferredPrompt.prompt();
+      deferredPrompt.userChoice.then((choiceResult) => {
+        if (choiceResult.outcome === 'accepted') {
+          console.log('Utilisateur a accepté l\'installation PWA');
+        } else {
+          console.log('Utilisateur a refusé l\'installation PWA');
+        }
+        deferredPrompt = null;
+        installBtn.style.display = 'none';
+      });
+    });
+  }
+
+  console.log('PWA prête à être installée');
+});
+
+// Écouteur pour l'événement appinstalled
+window.addEventListener('appinstalled', (evt) => {
+  console.log('PWA installée avec succès');
+  deferredPrompt = null;
+});
+
 // Exporter les fonctions pour les gardes
 export { checkAuth };

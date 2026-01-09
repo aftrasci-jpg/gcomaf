@@ -4,10 +4,20 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-  <link rel="apple-touch-icon" sizes="180x180" href="assets/argon/img/gcomaf-icon-48x48.png">
-  <link rel="icon" type="image/png" sizes="32x32" href="assets/argon/img/gcomaf-icon-32x32.png">
-  <link rel="icon" type="image/png" sizes="16x16" href="assets/argon/img/gcomaf-icon-16x16.png">
+  <!-- PWA Meta Tags -->
+  <meta name="theme-color" content="#5e72e4">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="CRM Gcomaf">
+  <meta name="msapplication-TileColor" content="#5e72e4">
+  <meta name="msapplication-config" content="/public/browserconfig.xml">
+  <!-- Favicon and Icons -->
+  <link rel="apple-touch-icon" sizes="180x180" href="public/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="public/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="public/favicon-16x16.png">
   <link rel="manifest" href="manifest.json">
+  <link rel="mask-icon" href="public/safari-pinned-tab.svg" color="#5e72e4">
+  <link rel="shortcut icon" href="public/favicon.ico">
   <title>CRM Gcomaf - Connexion</title>
   <!--     Fonts and icons     -->
   <link href="https://fonts.googleapis.com/css?family=Open+Sans:300,400,600,700" rel="stylesheet" />
@@ -56,6 +66,13 @@
           <a href="/gcomaf/register.html" id="go-to-register" class="text-sm text-muted">
             Pas encore inscrit ? <strong>Créer un compte agent</strong>
           </a>
+        </div>
+
+        <!-- Bouton d'installation PWA -->
+        <div class="text-center mt-3">
+          <button id="install-pwa-btn" class="btn btn-outline-primary btn-sm" style="display: none;">
+            <i class="fas fa-download me-2"></i>Installer l'App
+          </button>
         </div>
       </div>
     </div>
