@@ -24,8 +24,17 @@ async function validateAccessCode(code) {
     throw new Error("Le code d'accès est obligatoire");
   }
 
-  const ref = doc(db, 'system_config', 'agent_access_code');
-  const snap = await getDoc(ref);
+  let snap;
+
+  try {
+    const ref = doc(db, 'system_config', 'agent_access_code');
+    snap = await getDoc(ref);
+  } catch (networkError) {
+    console.error('Firestore unreachable:', networkError);
+    throw new Error(
+      "Connexion impossible au serveur. Vérifie ta connexion Internet puis réessaie."
+    );
+  }
 
   if (!snap.exists()) {
     throw new Error("Aucun code d'accès valide trouvé");
@@ -38,6 +47,7 @@ async function validateAccessCode(code) {
   }
 
   const expiresAt = data.expiresAt?.toDate?.() || new Date(data.expiresAt);
+
   if (new Date() > expiresAt) {
     throw new Error("Ce code d'accès a expiré");
   }
